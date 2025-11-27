@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Layout from "../Components/Layout";
 
-import Home from "../pages/public/Home";
+import Home from "../Pages/user/Home";
 import Interview from "../Pages/user/Interview";
 import Resume from "../Pages/user/Resume";
 import Support from "../Pages/user/Support";
