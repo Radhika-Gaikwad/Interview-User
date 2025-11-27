@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob {
+  animation: blob 6s infinite ease-in-out;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 1s ease-out;
+}
+
+
+/* Global Theme Utilities */
+@layer utilities {
+  /* Main App Gradient (background) */
+  .theme-bg {
+    @apply bg-gradient-to-br from-[#f5f5f4] via-[#fafafa] to-[#ececec];
+  }
+
+  /* Primary Brand Gradient (buttons, logo, active states) */
+  .theme-primary {
+    @apply bg-gradient-to-r from-indigo-600 via-sky-500 to-teal-500 text-white;
+  }
+
+  /* Primary Gradient Text */
+  .theme-text {
+    @apply bg-gradient-to-r from-indigo-700 via-sky-600 to-teal-600 bg-clip-text text-transparent;
+  }
+
+  /* Frosted White Glass Background */
+  .glass {
+    @apply bg-white/60 backdrop-blur-xl border-white/40;
+  }
+
+  /* Frosted Card */
+  .glass-card {
+    @apply bg-white/50 backdrop-blur-md border border-white/40 shadow-xl;
+  }
+}
+
+
+@layer utilities {
+  .hover-faint-gradient {
+    @apply bg-gradient-to-r from-indigo-100 via-sky-100 to-teal-100;
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.22s ease-out;
+}
+
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes popup {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+}
+
+.animate-popup {
+  animation: popup 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+/* optional — add to your global CSS */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(100,100,100,0.25);
+  border-radius: 9999px;
+}
