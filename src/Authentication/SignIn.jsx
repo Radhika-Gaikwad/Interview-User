@@ -9,6 +9,13 @@ const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // Navigate to /home after login
+    navigate("/home");
+  };
+
+
   return (
     <div className="relative min-h-screen md:h-screen theme-bg flex items-center justify-center overflow-hidden">
       
@@ -52,7 +59,7 @@ const SignIn = () => {
           </div>
 
           {/* Form */}
-          <form className="space-y-6 lg:px-6">
+          <form className="space-y-6 lg:px-6" onSubmit={handleLogin}>
             {/* Email */}
             <div>
               <label className="block text-base font-semibold text-gray-700">

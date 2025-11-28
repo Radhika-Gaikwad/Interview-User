@@ -99,10 +99,10 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
       Use flex-1 + overflow-auto so this part scrolls independently.
       Add padding so top & bottom content don't hide behind header/footer. */}
         <div
-          className="flex-1 px-3 pb-4 overflow-auto space-y-3 sidebar-scroll"
+          className="flex-1 px-3 pb-2 overflow-auto space-y-3 sidebar-scroll"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <nav className="md:space-y-2 space-y-1">
+          <nav className="md:space-y-2 space-y-1 mb-2">
             {menuItems.map((item, index) => (
               <NavLink
                 key={index}
@@ -143,7 +143,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
 
           {/* INTERVIEW CREDIT CARD (still inside scroll area so it scrolls along with nav) */}
           {(isOpen || isMobile) && (
-            <div className="px-0">
+            <div className="px-0 mt-4">
               <div
                 className="
             rounded-xl p-4 backdrop-blur-md 

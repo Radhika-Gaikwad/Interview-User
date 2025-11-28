@@ -11,21 +11,18 @@ import Download from "../Pages/user/Download";
 export default function PublicRoutes() {
   return (
     <Routes>
-
       {/* Layout Wrapper */}
       <Route element={<Layout />}>
-        {/* 1. / — Home */}
-        <Route path="/" element={<Home />} />
+        {/* Home Page */}
+        <Route path="/home" element={<Home />} />
 
-        {/* 2. Pages */}
+        {/* Other Pages */}
         <Route path="/interview" element={<Interview />} />
         <Route path="/resume" element={<Resume />} />
         <Route path="/support" element={<Support />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/download" element={<Download />} />
-
       </Route>
-
     </Routes>
   );
 }

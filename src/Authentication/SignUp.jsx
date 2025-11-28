@@ -11,6 +11,14 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const handleSignup = (e) => {
+    e.preventDefault();
+    // Perform signup logic here (e.g., API call)
+    // On success, navigate to the login page
+    navigate("/login");
+  };
+
+
   return (
     <div className="relative min-h-screen theme-bg flex items-center justify-center overflow-hidden">
 
@@ -54,7 +62,7 @@ const SignUp = () => {
           </div>
 
           {/* Form */}
-          <form className="space-y-6 lg:px-6">
+          <form className="space-y-6 lg:px-6" onSubmit={handleSignup}>
 
             {/* Name */}
             <div>
