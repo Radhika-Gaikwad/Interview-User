@@ -41,10 +41,10 @@ const SignIn = () => {
         </div>
 
         {/* Right Side */}
-        <div className="flex flex-col justify-start lg:px-24 py-5 px-5 glass">
+        <div className="flex flex-col justify-start lg:px-24 py-2 px-5 glass">
 
           {/* Logo */}
-          <div className="mb-5 text-center mt-3">
+          <div className="mb-3 text-center mt-3">
             <h1 className="text-4xl font-extrabold tracking-tight theme-text drop-shadow-sm">
               Intervue
             </h1>
@@ -59,7 +59,7 @@ const SignIn = () => {
           </div>
 
           {/* Form */}
-          <form className="space-y-6 lg:px-6" onSubmit={handleLogin}>
+          <form className="space-y-5 lg:px-6" onSubmit={handleLogin}>
             {/* Email */}
             <div>
               <label className="block text-base font-semibold text-gray-700">
@@ -140,7 +140,7 @@ const SignIn = () => {
           </p>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 my-5">
+          <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-px bg-gray-300" />
             <span className="text-gray-600 text-sm">or</span>
             <div className="flex-1 h-px bg-gray-300" />

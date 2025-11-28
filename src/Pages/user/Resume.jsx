@@ -106,40 +106,43 @@ export default function Resume() {
 
   const closeView = () => setViewItem(null);
 
-  const requestDelete = (id) => {
-    const item = data.find((d) => d.id === id);
-    setConfirmConfig({
-      open: true,
-      title: "Delete Resume",
-      message: `Are you sure you want to delete "${item?.title || id}"? This action cannot be undone.`,
-      onConfirm: () => {
-        // perform delete
-        setData((d) => d.filter((r) => r.id !== id));
-        setSelected((s) => {
-          const n = { ...s };
-          delete n[id];
-          return n;
-        });
-        // close modal
-        setConfirmConfig((c) => ({ ...c, open: false }));
-      },
-    });
-  };
+// Request delete for a single item
+const requestDelete = (id) => {
+  const item = data.find((d) => d.id === id);
+  setConfirmConfig({
+    open: true,
+    title: "Delete Resume",
+    message: `Are you sure you want to delete "${item?.title || id}"? This action cannot be undone.`,
+    // Use a fresh function closure here
+    onConfirm: () => {
+      setData((d) => d.filter((r) => r.id !== id));
+      setSelected((s) => {
+        const n = { ...s };
+        delete n[id];
+        return n;
+      });
+      setConfirmConfig((c) => ({ ...c, open: false }));
+    },
+  });
+};
 
-  const requestDeleteSelected = () => {
-    const count = Object.keys(selected).length;
-    if (!count) return;
-    setConfirmConfig({
-      open: true,
-      title: "Delete Selected Resumes",
-      message: `Delete ${count} selected resume(s)? This action cannot be undone.`,
-      onConfirm: () => {
-        setData((d) => d.filter((r) => !selected[r.id]));
-        setSelected({});
-        setConfirmConfig((c) => ({ ...c, open: false }));
-      },
-    });
-  };
+// Request delete for selected items
+const requestDeleteSelected = () => {
+  const count = Object.keys(selected).length;
+  if (!count) return;
+  setConfirmConfig({
+    open: true,
+    title: "Delete Selected Resumes",
+    message: `Delete ${count} selected resume(s)? This action cannot be undone.`,
+    onConfirm: () => {
+      setData((d) => d.filter((r) => !selected[r.id]));
+      setSelected({});
+      setConfirmConfig((c) => ({ ...c, open: false }));
+    },
+  });
+};
+
+
 
   return (
     <div className="p-2 md:p-4 lg:px-6 lg:h-[500px]">
@@ -279,20 +282,19 @@ export default function Resume() {
 
       {/* View modal */}
       <ViewModal open={!!viewItem} item={viewItem} onClose={closeView} />
+<ConfirmModal
+  key={confirmConfig.open ? Date.now() : "confirm"} // forces fresh render
+  open={confirmConfig.open}
+  title={confirmConfig.title}
+  message={confirmConfig.message}
+  onCancel={() => setConfirmConfig((c) => ({ ...c, open: false }))}
+  onConfirm={() => {
+    confirmConfig.onConfirm?.();
+  }}
+  confirmLabel="Delete"
+  cancelLabel="Cancel"
+/>
 
-      {/* Confirm modal */}
-      <ConfirmModal
-        open={confirmConfig.open}
-        title={confirmConfig.title}
-        message={confirmConfig.message}
-        onCancel={() => setConfirmConfig((c) => ({ ...c, open: false }))}
-        onConfirm={() => {
-          if (typeof confirmConfig.onConfirm === "function") confirmConfig.onConfirm();
-          else setConfirmConfig((c) => ({ ...c, open: false }));
-        }}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-      />
     </div>
   );
 }
