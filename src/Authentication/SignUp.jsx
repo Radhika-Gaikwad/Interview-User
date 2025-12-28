@@ -4,19 +4,49 @@ import { FcGoogle } from "react-icons/fc";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import signupImg from "../assets/2.png";
 import { useNavigate } from "react-router-dom";
+import { signupApi, startSocialLogin } from "../Services/authService";
+
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    // Perform signup logic here (e.g., API call)
-    // On success, navigate to the login page
-    navigate("/login");
+
+    if (!name || !email || !password || !role) {
+      alert("All fields are required");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const payload = { name, email, password, role };
+      const res = await signupApi(payload);
+
+      localStorage.setItem("token", res.data.token);
+      navigate("/dashboard");
+    } catch (err) {
+      alert(err.response?.data?.message || "Signup failed");
+    } finally {
+      setLoading(false);
+    }
   };
+
 
 
   return (
@@ -71,6 +101,8 @@ const SignUp = () => {
               </label>
               <input
                 type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Your full name"
                 className="w-full mt-1 px-4 py-3 rounded-xl bg-white/70 border 
                 border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-400"
@@ -84,6 +116,8 @@ const SignUp = () => {
               </label>
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@domain.com"
                 className="w-full mt-1 px-4 py-3 rounded-xl bg-white/70 border 
                 border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-400"
@@ -97,6 +131,8 @@ const SignUp = () => {
               </label>
               <input
                 type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
                 className="w-full mt-1 px-4 py-3 rounded-xl bg-white/70 border 
                 border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-400"
@@ -117,6 +153,8 @@ const SignUp = () => {
               </label>
               <input
                 type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter password"
                 className="w-full mt-1 px-4 py-3 rounded-xl bg-white/70 border 
                 border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-400"
@@ -140,6 +178,8 @@ const SignUp = () => {
                 Role
               </label>
               <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
                 className="w-full mt-1 px-4 py-3 rounded-xl bg-white/70 border
                 border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-400"
               >
@@ -166,11 +206,11 @@ const SignUp = () => {
             {/* Submit Button */}
             <button
               type="submit"
+              disabled={loading}
               className="w-full theme-primary 
                 py-3 text-lg rounded-xl shadow-xl hover:scale-[1.03] 
                 active:scale-95 transition font-semibold"
-            >
-              Create Account
+            >   {loading ? "Creating account..." : "Create Account"}
             </button>
           </form>
 
@@ -192,21 +232,25 @@ const SignUp = () => {
             <div className="flex-1 h-px bg-gray-300" />
           </div>
 
-          {/* Social Buttons */}
+          {/* Social Icons */}
           <div className="flex justify-center gap-6">
-            <button className="w-11 h-11 rounded-full flex items-center justify-center bg-[#1877F2] text-white shadow-lg hover:scale-110 transition">
-              <FaFacebookF size={18} />
-            </button>
 
-            <button className="w-11 h-11 rounded-full flex items-center justify-center bg-white border shadow-lg hover:scale-110 transition">
+            <button onClick={() => startSocialLogin("google")} className="w-11 h-11 rounded-full flex items-center justify-center bg-white border shadow-lg hover:scale-110 transition">
               <FcGoogle size={20} />
             </button>
 
-            <button className="w-11 h-11 rounded-full flex items-center justify-center bg-[#0A66C2] text-white shadow-lg hover:scale-110 transition">
+
+            <button onClick={() => startSocialLogin("facebook")} className="w-11 h-11 rounded-full flex items-center justify-center bg-[#0A66C2] text-white shadow-lg hover:scale-110 transition">
               <FaLinkedinIn size={18} />
             </button>
+            <button onClick={() => startSocialLogin("linkedin")} className="w-11 h-11 rounded-full flex items-center justify-center bg-[#1877F2] text-white shadow-lg hover:scale-110 transition">
+              <FaFacebookF size={18} />
+            </button>
 
-            <button className="w-11 h-11 rounded-full flex items-center justify-center bg-white border shadow-lg hover:scale-110 transition">
+
+
+
+            <button onClick={() => startSocialLogin("microsoft")} className="w-11 h-11 rounded-full flex items-center justify-center bg-white border shadow-lg hover:scale-110 transition">
               <img
                 src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg"
                 alt="MS"

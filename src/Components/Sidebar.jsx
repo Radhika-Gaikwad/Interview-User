@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import Tooltip from "./Tooltip.jsx";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
   User,
@@ -14,7 +15,8 @@ import { motion } from "framer-motion";
 export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   const [isOpen, setIsOpen] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth); // ✅ track width
-
+  const iconRef = useRef(null);
+  const [hovered, setHovered] = useState(false);
   /* Listen for screen size change */
   useEffect(() => {
     const handleResize = () => {
@@ -35,12 +37,13 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   const isMobile = windowWidth < 768;
 
   const menuItems = [
-    { name: "Home", icon: <Home size={22} />, path: "/" },
+    { name: "Home", icon: <Home size={22} />, path: "/home" },
     { name: "Interview Sessions", icon: <User size={22} />, path: "/interview" },
     { name: "CV / Resume", icon: <FileText size={22} />, path: "/resume" },
     { name: "Download Desktop App", icon: <Download size={22} />, path: "/download" },
     { name: "Email Support", icon: <Mail size={22} />, path: "/support" },
   ];
+
 
   return (
     <>
@@ -103,64 +106,76 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           <nav className="md:space-y-2 space-y-1 mb-2">
-            {menuItems.map((item, index) => (
-              <NavLink
-                key={index}
-                to={item.path}
-                onClick={() => isMobile && setIsMobileOpen(false)}
-                className={({ isActive }) =>
-                  `
-              relative group flex items-center gap-4 p-1 rounded-xl cursor-pointer
-              backdrop-blur-md border border-gray-100 transition-all shadow-sm
-              ${isActive ? "theme-primary text-white" : "text-gray-800 bg-white/60"}
-            `
-                }
-              >
-                <div className="w-10 h-10 flex items-center justify-center rounded-lg">
-                  {item.icon}
-                </div>
+            {menuItems.map((item, index) => {
+              const iconRef = useRef(null); // per-item ref
+              const [hovered, setHovered] = useState(false); // per-item hover
 
-                {(isOpen || isMobile) && (
-                  <span className="text-[15px] font-medium">{item.name}</span>
-                )}
+              return (
+                <NavLink
+                  key={index}
+                  to={item.path}
+                  onClick={() => isMobile && setIsMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `
+          relative group flex items-center gap-4 p-1 rounded-xl cursor-pointer
+          backdrop-blur-md border border-gray-100 transition-all shadow-sm
+          ${isActive ? "theme-primary text-white" : "text-gray-800 bg-white/60"}
+        `
+                  }
+                  onMouseEnter={() => setHovered(true)}
+                  onMouseLeave={() => setHovered(false)}
+                >
+                  <div ref={iconRef} className="w-10 h-10 flex items-center justify-center rounded-lg">
+                    {item.icon}
+                  </div>
 
-                {/* Tooltip */}
-                {!isOpen && !isMobile && (
-                  <span
-                    className="
-                absolute left-full ml-3 top-1/2 -translate-y-1/2
-                whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium
-                glass shadow-lg opacity-0 scale-95 transition-all duration-150
-                group-hover:opacity-100 group-hover:scale-100
-              "
-                  >
-                    {item.name}
-                  </span>
-                )}
-              </NavLink>
-            ))}
+                  {(isOpen || isMobile) && (
+                    <span className="text-[15px] font-medium">{item.name}</span>
+                  )}
+
+                  {/* Remove inline tooltip */}
+                  {!isOpen && !isMobile && (
+                    <Tooltip targetRef={iconRef} isVisible={hovered}>
+                      {item.name}
+                    </Tooltip>
+                  )}
+                </NavLink>
+              );
+            })}
           </nav>
 
-          {/* INTERVIEW CREDIT CARD (still inside scroll area so it scrolls along with nav) */}
+
           {(isOpen || isMobile) && (
             <div className="px-0 mt-4">
               <div
                 className="
-            rounded-xl p-4 backdrop-blur-md 
-            bg-white/60 border border-gray-100 shadow-sm
-            hover:shadow-md transition-all group
-          "
+        rounded-xl p-4 backdrop-blur-md 
+        bg-white/60 border border-gray-100 shadow-sm
+        hover:shadow-md transition-all group
+      "
               >
                 {/* Icon + Heading */}
                 <div className="flex items-center gap-3">
                   <div className="
-              w-10 h-10 flex items-center justify-center rounded-lg
-              bg-indigo-100 text-theme-text  
-              shadow-inner group-hover:scale-110 transition
-            ">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h6m-6 4h8M5 20l2-2h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v14z" />
+            w-10 h-10 flex items-center justify-center rounded-lg
+            bg-indigo-100 text-theme-text  
+            shadow-inner group-hover:scale-110 transition
+          ">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-6 h-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M7 8h10M7 12h6m-6 4h8M5 20l2-2h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v14z"
+                      />
                     </svg>
+
                   </div>
 
                   <h3 className="text-[15px] font-semibold text-gray-800">Interview Credit</h3>
@@ -170,18 +185,22 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
                   You have <span className="font-semibold text-indigo-600">1.5</span> interview credits
                 </p>
 
-                <button
+                <NavLink
+                  to="/buy-credits"
+                  onClick={() => isMobile && setIsMobileOpen(false)}
                   className="
-              mt-3 w-full py-2 rounded-lg 
-              theme-primary text-white font-semibold
-              shadow-sm hover:shadow-md hover:scale-[1.01] transition
-            "
+          mt-3 block w-full py-2 rounded-lg 
+          theme-primary text-white font-semibold
+          shadow-sm hover:shadow-md hover:scale-[1.01] transition text-center
+        "
                 >
                   Get Credit
-                </button>
+                </NavLink>
               </div>
             </div>
           )}
+
+
         </div>
 
         {/* ===== Footer / Profile - fixed at bottom ===== */}

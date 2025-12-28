@@ -7,6 +7,7 @@ import Resume from "../Pages/user/Resume";
 import Support from "../Pages/user/Support";
 import Profile from "../Pages/user/Profile";
 import Download from "../Pages/user/Download";
+import InterviewCredits from "../Pages/user/InterviewCredits";
 
 export default function PublicRoutes() {
   return (
@@ -22,6 +23,7 @@ export default function PublicRoutes() {
         <Route path="/support" element={<Support />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/download" element={<Download />} />
+        <Route path="/buy-credits" element={<InterviewCredits />} />
       </Route>
     </Routes>
   );

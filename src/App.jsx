@@ -5,12 +5,13 @@ import Signup from "./Authentication/SignUp";
 import ForgotPassword from "./Authentication/ForgotPassword";
 import ResetPassword from "./Authentication/ResetPassword";
 import VerifyEmail from "./Authentication/VerifyEmail";
-
+import AuthCallback from "./Pages/AuthCallback";
 function App() {
   return (
     <Router>
       <Routes>
         {/* AUTH ROUTES */}
+          <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -19,9 +20,8 @@ function App() {
 
         {/* PUBLIC WEBSITE ROUTES */}
         <Route path="/*" element={<PublicRoutes />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Default Route */}
-        <Route path="/" element={<Login />} />
       </Routes>
     </Router>
   );
