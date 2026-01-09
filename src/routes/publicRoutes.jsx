@@ -8,22 +8,20 @@ import Support from "../Pages/user/Support";
 import Profile from "../Pages/user/Profile";
 import Download from "../Pages/user/Download";
 import InterviewCredits from "../Pages/user/InterviewCredits";
+import PaymentSuccess from "../Pages/payment/PaymentSuccess";
 
 export default function PublicRoutes() {
   return (
     <Routes>
-      {/* Layout Wrapper */}
       <Route element={<Layout />}>
-        {/* Home Page */}
         <Route path="/home" element={<Home />} />
-
-        {/* Other Pages */}
         <Route path="/interview" element={<Interview />} />
         <Route path="/resume" element={<Resume />} />
         <Route path="/support" element={<Support />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/download" element={<Download />} />
         <Route path="/buy-credits" element={<InterviewCredits />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
       </Route>
     </Routes>
   );

@@ -1,27 +1,43 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import PublicRoutes from "./routes/publicRoutes";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import PublicRoutes from "./routes/publicRoutes.jsx";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicOnlyRoute from "./routes/PublicOnlyRoute";
+import AuthCallback from "./Authentication/AuthCallback";
 import Login from "./Authentication/SignIn";
 import Signup from "./Authentication/SignUp";
 import ForgotPassword from "./Authentication/ForgotPassword";
 import ResetPassword from "./Authentication/ResetPassword";
 import VerifyEmail from "./Authentication/VerifyEmail";
-import AuthCallback from "./Pages/AuthCallback";
+
 function App() {
   return (
     <Router>
+      <Toaster position="top-right" />
+
       <Routes>
-        {/* AUTH ROUTES */}
-          <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
+        {/* PUBLIC */}
+        <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+        <Route path="/signup" element={<PublicOnlyRoute><Signup /></PublicOnlyRoute>} />
+        <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+        <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
+        <Route path="/verify-email" element={<PublicOnlyRoute><VerifyEmail /></PublicOnlyRoute>} />
 
-        {/* PUBLIC WEBSITE ROUTES */}
-        <Route path="/*" element={<PublicRoutes />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+        {/* AUTH0 CALLBACK */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
+       <Route
+  path="/*"
+  element={
+    <ProtectedRoute>
+      <PublicRoutes />
+    </ProtectedRoute>
+  }
+/>
+
+
+        {/* FALLBACK */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );

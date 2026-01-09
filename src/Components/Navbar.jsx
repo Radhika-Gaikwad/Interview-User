@@ -14,7 +14,7 @@ export default function Navbar({ setIsMobileOpen, openUpload, isMobileOpen, open
   const [isSessionOpen, setIsSessionOpen] = useState(false);
   const getPageName = () => {
     const path = location.pathname;
-    if (path === "/") return "Home";
+    if (path === "/home") return "Home";
     if (path.includes("interview")) return "Interview Sessions";
     if (path.includes("resume")) return "CV / Resume";
     if (path.includes("download")) return "Download App";

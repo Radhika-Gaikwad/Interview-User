@@ -2,9 +2,28 @@ import React from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export default function LogoutModal({ close }) {
   const navigate = useNavigate();
+  const { logout } = useAuth0();
+
+  const handleLogout = () => {
+    // 🧹 1. Remove JWT token
+    localStorage.removeItem("token");
+
+    // 🧹 2. Clear Auth0 session
+    logout({
+      logoutParams: {
+        returnTo: window.location.origin + "/login",
+      },
+    });
+
+    // 🧹 3. Close modal (safe)
+    close();
+
+    // (navigate is handled by returnTo)
+  };
 
   return (
     <div className="
@@ -46,7 +65,7 @@ export default function LogoutModal({ close }) {
           </button>
 
           <button
-            onClick={() => navigate("/login")}
+            onClick={handleLogout}
             className="
               flex-1 py-2 rounded-xl 
               bg-red-500 text-white font-semibold shadow

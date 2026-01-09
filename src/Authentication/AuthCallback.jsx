@@ -22,7 +22,7 @@ const AuthCallback = () => {
       providerId: user.sub,
     })
       .then((res) => {
-        // Backend now sets an HttpOnly cookie for the JWT. No localStorage writes here.
+    
         toast.success("Login successful");
         navigate("/home", { replace: true });
       })

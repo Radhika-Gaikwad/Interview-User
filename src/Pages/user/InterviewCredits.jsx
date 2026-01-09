@@ -1,15 +1,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, Coins, CreditCard } from "lucide-react";
-
-// InterviewCredits Page
-// - Uses the theme utilities you provided (.theme-bg, .theme-primary, .theme-text, .glass, .glass-card)
-// - Fixed top offer bar (orange faint shade)
-// - Pricing headline + one-time payment text
-// - Informational plate with icons/dots
-// - 6 plan cards (3 on first row, 3 on second row)
-// - Click to select a plan (makes card larger + changes bg)
-// - Hover effects and subtle animations using framer-motion
+import { buyCredits } from "../../Services/paymentService";
+import PreStripeModal from "../../Components/PreStripeModal";
+import ConfirmPlanModal from "../../Components/ConfirmPlanModal";
 
 const plansRow1 = [
   {
@@ -119,17 +113,16 @@ const DotGrid = ({ rows = 1, cols = 3, yellow = 0 }) => {
   );
 };
 
-const PlanCard = ({ plan, isSelected, onSelect }) => {
+const PlanCard = ({  plan, isSelected, onSelect, onBuy }) => {
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.02 }}
-      onClick={() => onSelect(plan.id)}
-      className={`relative cursor-pointer p-5 rounded-2xl transition-all shadow-lg glass-card border-2
-        flex flex-col   /* 👈 ensures button sticks bottom */
-        ${isSelected ? "scale-105 ring-4 ring-indigo-200 bg-white/80" : "hover-faint-gradient"}
+      onClick={() => onSelect(plan.id)} // 👈 ONLY select
+      className={`relative cursor-pointer p-5 rounded-2xl border-2
+        ${isSelected ? "ring-4 ring-indigo-200 bg-white/80" : "hover-faint-gradient"}
       `}
     >
       {/* Top content */}
@@ -186,8 +179,8 @@ const PlanCard = ({ plan, isSelected, onSelect }) => {
         {/* Buy button bottom-right FIX */}
         <button
           onClick={(e) => {
-            e.stopPropagation();
-            onSelect(plan.id);
+            e.stopPropagation();     // 🔥 CRITICAL
+            onBuy(plan);             // 👈 BUY directly
           }}
           className={`px-3 py-1.5 rounded-lg font-semibold text-sm transition shadow-md
             ${isSelected ? "bg-white text-indigo-700 border border-indigo-200" : "theme-primary"}
@@ -229,9 +222,52 @@ const InfoPlate = () => {
 };
 
 const InterviewCredits = () => {
-  const [selected, setSelected] = useState(null);
+const [selected, setSelected] = useState(null);
+const [activePlan, setActivePlan] = useState(null); // ✅ holds plan object
+const [showConfirm, setShowConfirm] = useState(false);
+const [showStripePrep, setShowStripePrep] = useState(false);
+const [isPaying, setIsPaying] = useState(false);
+
+const [selectedPlanId, setSelectedPlanId] = useState(null); // visual selection
+
 
   return (
+  <>
+{showConfirm && activePlan && (
+  <ConfirmPlanModal
+    plan={activePlan}
+    onClose={() => setShowConfirm(false)}
+    onConfirm={() => {
+      setShowConfirm(false);
+      setShowStripePrep(true);
+    }}
+  />
+)}
+
+{showStripePrep && activePlan && (
+  <PreStripeModal
+    plan={activePlan}
+    onPay={() => {
+      setIsPaying(true);
+      buyCredits({
+        title: activePlan.title,
+        amount: Number(activePlan.priceINR.replace(",", "")),
+        credits: activePlan.credits + activePlan.free,
+      });
+    }}
+    onBack={() => {
+      setShowStripePrep(false);
+      setShowConfirm(true);
+    }}
+    onClose={() => {
+      setShowStripePrep(false);
+      setActivePlan(null);
+    }}
+  />
+)}
+
+
+
     <div className="relative w-full theme-bg ">{/* pt-20 to offset fixed offer bar */}
        <div className="sticky top-0 z-30">
         <OfferBar />
@@ -302,9 +338,19 @@ const InterviewCredits = () => {
 
         {/* First Row (3 cards) */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plansRow1.map((p) => (
-            <PlanCard key={p.id} plan={p} isSelected={selected === p.id} onSelect={setSelected} />
-          ))}
+{plansRow1.map((p) => (
+  <PlanCard
+    key={p.id}
+    plan={p}
+    isSelected={selectedPlanId === p.id}
+    onSelect={setSelectedPlanId}
+    onBuy={(plan) => {
+      setActivePlan(plan);
+      setShowConfirm(true);
+    }}
+  />
+))}
+
         </div>
 
 
@@ -336,9 +382,19 @@ const InterviewCredits = () => {
 
         {/* Second Row (3 cards) */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plansRow2.map((p) => (
-            <PlanCard key={p.id} plan={p} isSelected={selected === p.id} onSelect={setSelected} />
-          ))}
+{plansRow2.map((p) => (
+  <PlanCard
+    key={p.id}
+    plan={p}
+    isSelected={selectedPlanId === p.id}
+    onSelect={setSelectedPlanId}
+    onBuy={(plan) => {
+      setActivePlan(plan);
+      setShowConfirm(true);
+    }}
+  />
+))}
+
         </div>
 
         {/* CTA area */}
@@ -350,16 +406,35 @@ const InterviewCredits = () => {
         >
           <div>
             <div className="text-lg font-semibold">Ready to buy credits?</div>
-            <div className="text-sm text-gray-600">Selected plan: {selected ?? "None"}</div>
+           <div className="text-sm text-gray-600">
+  Selected plan: {selectedPlanId ? selectedPlanId.toUpperCase() : "None"}
+</div>
+
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="px-4 py-2 rounded-lg theme-primary font-semibold">Proceed to Pay</button>
+      <button
+  disabled={!selectedPlanId}
+  onClick={() => {
+    const plan = [...plansRow1, ...plansRow2].find(
+      (p) => p.id === selectedPlanId
+    );
+    setActivePlan(plan);
+    setShowConfirm(true);
+  }}
+  className={`px-4 py-2 rounded-lg font-semibold
+    ${!selectedPlanId ? "opacity-50 cursor-not-allowed" : "theme-primary"}
+  `}
+>
+  Buy Selected Plan
+</button>
+
             <button className="px-4 py-2 rounded-lg border">Contact Support</button>
           </div>
         </motion.div>
       </div>
     </div>
+    </>
   );
 };
 
