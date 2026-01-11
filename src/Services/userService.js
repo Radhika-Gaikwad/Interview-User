@@ -1,15 +1,22 @@
 import api from "../utils/axiosInstance";
 
 export const getProfile = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    console.warn("No token found, user is not logged in yet");
+    return null;
+  }
+
   try {
     const res = await api.get("/users/me");
     console.log("Profile:", res.data);
-    return res.data.user; // or res.data depending on your API
+    return res.data.user;
   } catch (err) {
-    console.log("Error fetching profile:", err.response?.status, err.response?.data);
-    return null; // return null if fetch fails
+    console.error("Error fetching profile:", err.response?.status, err.response?.data);
+    return null;
   }
 };
+
 
 
 // Update logged-in user profile

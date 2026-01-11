@@ -10,25 +10,33 @@ const Profile = () => {
   const [form, setForm] = useState({});
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await getProfile();
-        setUser(data);
-        setForm({
-          fullName: data.fullName,
-          role: data.role,
-          resumeUrl: data.resumeUrl || "",
-        });
-      } catch {
-        console.error("Failed to load profile");
-      } finally {
-        setLoading(false);
+ useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      const data = await getProfile();
+
+      if (!data) {
+        console.warn("No profile data, user might not be logged in");
+        return;
       }
-    };
-    fetchProfile();
-  }, []);
+
+      setProfile(data); // set profile safely
+      setForm({
+        fullName: data.fullName || "",
+        role: data.role || "",
+        resumeUrl: data.resumeUrl || "",
+      });
+    } catch (err) {
+      console.error("Failed to load profile", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProfile();
+}, []);
 
   const handleUpdate = async () => {
     try {
