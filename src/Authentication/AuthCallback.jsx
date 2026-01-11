@@ -21,11 +21,13 @@ const AuthCallback = () => {
       provider: user.sub.split("|")[0],
       providerId: user.sub,
     })
-      .then((res) => {
-    
-        toast.success("Login successful");
-        navigate("/home", { replace: true });
-      })
+   .then((res) => {
+  // 🔑 VERY IMPORTANT
+  localStorage.setItem("token", res.data.token);
+
+  toast.success("Login successful");
+  navigate("/home", { replace: true });
+})
       .catch(() => {
         toast.error("Social login failed");
         navigate("/login", { replace: true });
