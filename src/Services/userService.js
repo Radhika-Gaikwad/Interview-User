@@ -1,10 +1,16 @@
 import api from "../utils/axiosInstance";
 
-// Get logged-in user profile
 export const getProfile = async () => {
-  const res = await api.get("/users/me");
-  return res.data.user;
+  try {
+    const res = await api.get("/users/me");
+    console.log("Profile:", res.data);
+    return res.data.user; // or res.data depending on your API
+  } catch (err) {
+    console.log("Error fetching profile:", err.response?.status, err.response?.data);
+    return null; // return null if fetch fails
+  }
 };
+
 
 // Update logged-in user profile
 export const updateProfile = async (payload) => {

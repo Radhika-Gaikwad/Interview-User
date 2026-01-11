@@ -4,7 +4,7 @@ import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 
-import PublicRoutes from "./routes/PublicRoutes";
+import PublicRoutes from "./routes/publicRoutes";
 import AuthCallback from "./Authentication/AuthCallback";
 import Login from "./Authentication/SignIn";
 import Signup from "./Authentication/SignUp";
