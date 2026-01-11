@@ -18,21 +18,18 @@ function isTokenValid(token) {
 }
 
 const PublicOnlyRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isLoading } = useAuth0();
   const token = localStorage.getItem("token");
   const hasValidToken = isTokenValid(token);
 
   if (isLoading) return null;
 
-  if (token && !hasValidToken) {
-    localStorage.removeItem("token");
-  }
-
-  if (isAuthenticated || hasValidToken) {
+  if (hasValidToken) {
     return <Navigate to="/home" replace />;
   }
 
   return children;
 };
+
 
 export default PublicOnlyRoute;

@@ -1,8 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import PublicRoutes from "./routes/publicRoutes.jsx";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
+
+import PublicRoutes from "./routes/PublicRoutes";
 import AuthCallback from "./Authentication/AuthCallback";
 import Login from "./Authentication/SignIn";
 import Signup from "./Authentication/SignUp";
@@ -12,11 +14,14 @@ import VerifyEmail from "./Authentication/VerifyEmail";
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Toaster position="top-right" />
 
       <Routes>
-        {/* PUBLIC */}
+        {/* DEFAULT */}
+        <Route path="/" element={<Navigate to="/home" replace />} />
+
+        {/* PUBLIC ONLY */}
         <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
         <Route path="/signup" element={<PublicOnlyRoute><Signup /></PublicOnlyRoute>} />
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
@@ -26,20 +31,17 @@ function App() {
         {/* AUTH0 CALLBACK */}
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-       <Route
-  path="/*"
-  element={
-    <ProtectedRoute>
-      <PublicRoutes />
-    </ProtectedRoute>
-  }
-/>
-
-
-        {/* FALLBACK */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* PROTECTED */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <PublicRoutes />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 
