@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub, FaLinkedinIn } from "react-icons/fa";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import loginImg from "../assets/1.png";
 import { useNavigate } from "react-router-dom";
-import { loginUser, socialLogin } from "../Services/authService";
+import { loginUser } from "../Services/authService";
 import { useAuth0 } from "@auth0/auth0-react";
 import toast from "react-hot-toast";
 import SocialAuthLoader from "../Components/SocialAuthLoader";
@@ -43,9 +43,7 @@ const MicrosoftIcon = (
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { loginWithRedirect, user, isAuthenticated, isLoading } = useAuth0();
-
-  const hasCalledSocialLogin = useRef(false);
+  const { loginWithRedirect } = useAuth0();
 
   const [showPassword, setShowPassword] = useState(false);
   const [authProvider, setAuthProvider] = useState(null);
@@ -62,24 +60,24 @@ const SignIn = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Normal email/password login
+  // 🔐 Email/password login
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const res = await loginUser(formData);
-      // Store returned token (dev-friendly) and navigate
+
       if (res?.token) {
         localStorage.setItem("token", res.token);
       }
-      console.log(res);
+
       toast.success("Login successful");
       navigate("/home");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Login failed");
+      toast.error(err?.response?.data?.message || "Login failed");
     }
   };
 
-  // Social login (ALL providers)
+  // 🌐 Social login (redirect ONLY)
   const handleSocialLogin = async (connection) => {
     setAuthProvider(connection);
     setShowSocialLoader(true);
@@ -91,38 +89,6 @@ const SignIn = () => {
       },
     });
   };
-
-  /* ================= AUTH0 CALLBACK ================= */
-
-  useEffect(() => {
-    if (isLoading || !isAuthenticated || !user) return;
-    if (hasCalledSocialLogin.current) return;
-
-    hasCalledSocialLogin.current = true;
-
-    socialLogin({
-      email: user.email,
-      name: user.name,
-      provider: user.sub.split("|")[0],
-      providerId: user.sub,
-    })
-      .then((res) => {
-        // Backend sets HttpOnly cookie; do not store token in localStorage
-        toast.success("Login successful");
-
-        setShowSocialLoader(false);
-        setAuthProvider(null);
-
-        navigate("/home", { replace: true });
-      })
-      .catch((err) => {
-        hasCalledSocialLogin.current = false;
-        setShowSocialLoader(false);
-        setAuthProvider(null);
-
-        toast.error(err.response?.data?.message || "Social login failed");
-      });
-  }, [isAuthenticated, isLoading, user]);
 
   /* ================= UI ================= */
 
@@ -154,7 +120,6 @@ const SignIn = () => {
       )}
 
       <div className="relative min-h-screen theme-bg flex items-center justify-center overflow-hidden">
-        {/* Blobs */}
         <div className="absolute w-[500px] h-[500px] bg-white/20 rounded-full blur-3xl animate-blob -top-20 -left-20" />
         <div className="absolute w-[500px] h-[500px] bg-white/10 blur-3xl animate-blob animation-delay-2000 -bottom-20 -right-10" />
 

@@ -18,24 +18,59 @@ function App() {
       <Toaster position="top-right" />
 
       <Routes>
+        {/* ROOT */}
         <Route
-  path="/"
-  element={
-    <ProtectedRoute>
-      <Navigate to="/home" replace />
-    </ProtectedRoute>
-  }
-/>
-
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Navigate to="/home" replace />
+            </ProtectedRoute>
+          }
+        />
 
         {/* PUBLIC ONLY */}
-        <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-        <Route path="/signup" element={<PublicOnlyRoute><Signup /></PublicOnlyRoute>} />
-        <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
-        <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
-        <Route path="/verify-email" element={<PublicOnlyRoute><VerifyEmail /></PublicOnlyRoute>} />
+        <Route
+          path="/login"
+          element={
+            <PublicOnlyRoute>
+              <Login />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicOnlyRoute>
+              <Signup />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicOnlyRoute>
+              <ForgotPassword />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PublicOnlyRoute>
+              <ResetPassword />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <PublicOnlyRoute>
+              <VerifyEmail />
+            </PublicOnlyRoute>
+          }
+        />
 
-        {/* AUTH0 CALLBACK */}
+        {/* AUTH0 CALLBACK (NO GUARD HERE) */}
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* PROTECTED */}

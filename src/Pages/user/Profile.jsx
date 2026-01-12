@@ -12,7 +12,7 @@ const Profile = () => {
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
 
   useEffect(() => {
@@ -20,11 +20,11 @@ const navigate = useNavigate();
       try {
         const data = await getProfile();
 
-  if (!data) {
-  console.warn("No profile found, redirecting to login");
-  navigate("/login", { replace: true });
-  return;
-}
+        if (!data) {
+          console.warn("No profile found, redirecting to login");
+          navigate("/login", { replace: true });
+          return;
+        }
 
         setProfile(data); // set profile safely
         setForm({
@@ -100,7 +100,7 @@ const navigate = useNavigate();
                 />
               ) : (
                 <h1 className="text-lg font-semibold theme-text">
-                  {user?.fullName}
+                  {profile?.fullName}
                 </h1>
               )}
 
@@ -121,13 +121,13 @@ const navigate = useNavigate();
                     <option>HR / Recruiter</option>
                   </select>
                 ) : (
-                  <span>{user.role}</span>
+                  <span>{profile?.role}</span>
                 )}
               </div>
 
               {/* EMAIL */}
               <div className="mt-1 flex items-center gap-2 text-gray-500 text-sm">
-                <Mail size={16} /> {user.email}
+                <Mail size={16} /> {profile?.email}
               </div>
 
               {/* ACTIONS */}
