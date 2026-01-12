@@ -6,6 +6,7 @@ import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 
 import PublicRoutes from "./routes/publicRoutes";
 import AuthCallback from "./Authentication/AuthCallback";
+
 import Login from "./Authentication/SignIn";
 import Signup from "./Authentication/SignUp";
 import ForgotPassword from "./Authentication/ForgotPassword";
@@ -28,7 +29,7 @@ function App() {
           }
         />
 
-        {/* PUBLIC ONLY */}
+        {/* PUBLIC ONLY ROUTES */}
         <Route
           path="/login"
           element={
@@ -37,6 +38,7 @@ function App() {
             </PublicOnlyRoute>
           }
         />
+
         <Route
           path="/signup"
           element={
@@ -45,6 +47,7 @@ function App() {
             </PublicOnlyRoute>
           }
         />
+
         <Route
           path="/forgot-password"
           element={
@@ -53,6 +56,7 @@ function App() {
             </PublicOnlyRoute>
           }
         />
+
         <Route
           path="/reset-password"
           element={
@@ -61,6 +65,7 @@ function App() {
             </PublicOnlyRoute>
           }
         />
+
         <Route
           path="/verify-email"
           element={
@@ -70,10 +75,10 @@ function App() {
           }
         />
 
-        {/* AUTH0 CALLBACK (NO GUARD HERE) */}
+        {/* AUTH0 CALLBACK — NEVER WRAPPED */}
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* PROTECTED */}
+        {/* PROTECTED APP ROUTES */}
         <Route
           path="/*"
           element={
@@ -88,3 +93,4 @@ function App() {
 }
 
 export default App;
+

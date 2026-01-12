@@ -39,19 +39,12 @@ const MicrosoftIcon = (
 );
 
 const SignUp = () => {
-
-  const {
-    loginWithRedirect,
-    user,
-    isAuthenticated,
-    isLoading,
-  } = useAuth0();
   const navigate = useNavigate();
-  const hasCalledSocialLogin = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [authProvider, setAuthProvider] = useState(null);
   const [showSocialLoader, setShowSocialLoader] = useState(false);
+const { loginWithRedirect } = useAuth0();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -95,16 +88,6 @@ const SignUp = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setShowGoogleLoader(true);
-
-    await loginWithRedirect({
-      authorizationParams: {
-        connection: "google-oauth2",
-        scope: "openid profile email",
-      },
-    });
-  };
 
 
   const handleSocialLogin = async (connection) => {
@@ -119,36 +102,6 @@ const SignUp = () => {
     });
   };
 
-  useEffect(() => {
-    if (isLoading || !isAuthenticated || !user) return;
-    if (hasCalledSocialLogin.current) return;
-
-    hasCalledSocialLogin.current = true;
-
-    socialLogin({
-      email: user.email,
-      name: user.name,
-      provider: user.sub.split("|")[0],
-      providerId: user.sub,
-    })
-      .then((res) => {
-        // Backend sets HttpOnly cookie; do not store token client-side
-        toast.success("Login successful");
-
-        setShowSocialLoader(false);
-        setAuthProvider(null);
-
-        navigate("/home", { replace: true });
-      })
-      .catch((err) => {
-        hasCalledSocialLogin.current = false;
-
-        setShowSocialLoader(false);
-        setAuthProvider(null);
-
-        toast.error(err.response?.data?.message || "Social login failed");
-      });
-  }, [isAuthenticated, isLoading, user]);
 
 
 
