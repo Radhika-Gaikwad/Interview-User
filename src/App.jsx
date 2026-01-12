@@ -18,8 +18,15 @@ function App() {
       <Toaster position="top-right" />
 
       <Routes>
-        {/* DEFAULT */}
-        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route
+  path="/"
+  element={
+    <ProtectedRoute>
+      <Navigate to="/home" replace />
+    </ProtectedRoute>
+  }
+/>
+
 
         {/* PUBLIC ONLY */}
         <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import LogoutModal from "../../Components/LogoutModal";
 import { getProfile, updateProfile, logoutUser } from "../../Services/userService";
 import { Mail, Briefcase, LogOut, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -11,32 +12,35 @@ const Profile = () => {
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+const navigate = useNavigate();
 
- useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      const data = await getProfile();
 
-      if (!data) {
-        console.warn("No profile data, user might not be logged in");
-        return;
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getProfile();
+
+  if (!data) {
+  console.warn("No profile found, redirecting to login");
+  navigate("/login", { replace: true });
+  return;
+}
+
+        setProfile(data); // set profile safely
+        setForm({
+          fullName: data.fullName || "",
+          role: data.role || "",
+          resumeUrl: data.resumeUrl || "",
+        });
+      } catch (err) {
+        console.error("Failed to load profile", err);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setProfile(data); // set profile safely
-      setForm({
-        fullName: data.fullName || "",
-        role: data.role || "",
-        resumeUrl: data.resumeUrl || "",
-      });
-    } catch (err) {
-      console.error("Failed to load profile", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchProfile();
-}, []);
+    fetchProfile();
+  }, []);
 
   const handleUpdate = async () => {
     try {
@@ -96,7 +100,7 @@ const Profile = () => {
                 />
               ) : (
                 <h1 className="text-lg font-semibold theme-text">
-                  {user.fullName}
+                  {user?.fullName}
                 </h1>
               )}
 
