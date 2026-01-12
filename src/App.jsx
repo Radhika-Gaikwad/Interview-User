@@ -4,7 +4,6 @@ import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 
-import PublicRoutes from "./routes/publicRoutes";
 import AuthCallback from "./Authentication/AuthCallback";
 
 import Login from "./Authentication/SignIn";
@@ -13,84 +12,58 @@ import ForgotPassword from "./Authentication/ForgotPassword";
 import ResetPassword from "./Authentication/ResetPassword";
 import VerifyEmail from "./Authentication/VerifyEmail";
 
+import Layout from "./Components/Layout";
+
+// pages
+import Home from "./Pages/user/Home";
+import Interview from "./Pages/user/Interview";
+import Resume from "./Pages/user/Resume";
+import Support from "./Pages/user/Support";
+import Profile from "./Pages/user/Profile";
+import Download from "./Pages/user/Download";
+import InterviewCredits from "./Pages/user/InterviewCredits";
+import PaymentSuccess from "./Pages/payment/PaymentSuccess";
+
 function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
 
       <Routes>
-        {/* ROOT */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Navigate to="/home" replace />
-            </ProtectedRoute>
-          }
-        />
+  {/* ROOT */}
+  <Route path="/" element={<Navigate to="/home" replace />} />
 
-        {/* PUBLIC ONLY ROUTES */}
-        <Route
-          path="/login"
-          element={
-            <PublicOnlyRoute>
-              <Login />
-            </PublicOnlyRoute>
-          }
-        />
+  {/* PUBLIC ONLY */}
+  <Route element={<PublicOnlyRoute />}>
+    <Route path="/login" element={<Login />} />
+    <Route path="/signup" element={<Signup />} />
+    <Route path="/forgot-password" element={<ForgotPassword />} />
+    <Route path="/reset-password" element={<ResetPassword />} />
+    <Route path="/verify-email" element={<VerifyEmail />} />
+  </Route>
 
-        <Route
-          path="/signup"
-          element={
-            <PublicOnlyRoute>
-              <Signup />
-            </PublicOnlyRoute>
-          }
-        />
+  {/* AUTH CALLBACK */}
+  <Route path="/auth/callback" element={<AuthCallback />} />
 
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicOnlyRoute>
-              <ForgotPassword />
-            </PublicOnlyRoute>
-          }
-        />
+  {/* PROTECTED */}
+  <Route element={<ProtectedRoute />}>
+    <Route element={<Layout />}>
+      <Route path="/home" element={<Home />} />
+      <Route path="/interview" element={<Interview />} />
+      <Route path="/resume" element={<Resume />} />
+      <Route path="/support" element={<Support />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/download" element={<Download />} />
+      <Route path="/buy-credits" element={<InterviewCredits />} />
+      <Route path="/payment-success" element={<PaymentSuccess />} />
+    </Route>
+  </Route>
+</Routes>
 
-        <Route
-          path="/reset-password"
-          element={
-            <PublicOnlyRoute>
-              <ResetPassword />
-            </PublicOnlyRoute>
-          }
-        />
-
-        <Route
-          path="/verify-email"
-          element={
-            <PublicOnlyRoute>
-              <VerifyEmail />
-            </PublicOnlyRoute>
-          }
-        />
-
-        {/* AUTH0 CALLBACK — NEVER WRAPPED */}
-        <Route path="/auth/callback" element={<AuthCallback />} />
-
-        {/* PROTECTED APP ROUTES */}
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <PublicRoutes />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
+
 

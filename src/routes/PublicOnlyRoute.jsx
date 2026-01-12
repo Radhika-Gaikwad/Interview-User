@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
 function isTokenValid(token) {
   if (!token) return false;
@@ -12,25 +12,21 @@ function isTokenValid(token) {
     if (pad) base64 += "=".repeat(4 - pad);
 
     const decoded = JSON.parse(atob(base64));
-
-    return (
-      typeof decoded.exp === "number" &&
-      decoded.exp * 1000 > Date.now()
-    );
+    return decoded.exp * 1000 > Date.now();
   } catch {
     return false;
   }
 }
 
-const PublicOnlyRoute = ({ children }) => {
+const PublicOnlyRoute = () => {
   const token = localStorage.getItem("token");
-  const hasValidToken = isTokenValid(token);
 
-  if (hasValidToken) {
+
+  if (isTokenValid(token)) {
     return <Navigate to="/home" replace />;
   }
 
-  return children;
+  return <Outlet />; // ✅ REQUIRED
 };
 
 export default PublicOnlyRoute;
