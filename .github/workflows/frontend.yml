@@ -42,9 +42,7 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f k8s/frontend-cert.yaml
-          kubectl apply -f k8s/user-frontend-deployment.yaml
-          kubectl apply -f k8s/frontend-service.yaml
-          kubectl apply -f k8s/frontend-ingress.yaml
-          kubectl rollout status deployment/user-frontend
-
+          kubectl apply -f Kubernet/frontend-cert.yaml
+          kubectl apply -f Kubernet/user-frontend-deployment.yaml
+          kubectl apply -f Kubernet/frontend-service.yaml
+          kubectl apply -f Kubernet/frontend-ingress.yaml
