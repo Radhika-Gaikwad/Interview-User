@@ -1,0 +1,43 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Docker for GCP
+        run: gcloud auth configure-docker
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }} .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }}
+
+      - name: Connect to GKE
+        run: |
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER }} \
+          --zone ${{ secrets.GKE_ZONE }} --project ${{ secrets.GKE_PROJECT }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/frontend-cert.yaml
+          kubectl apply -f k8s/user-frontend-deployment.yaml
+          kubectl apply -f k8s/frontend-service.yaml
+          kubectl apply -f k8s/frontend-ingress.yaml
+          kubectl rollout status deployment/user-frontend
