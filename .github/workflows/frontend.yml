@@ -18,8 +18,13 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Set up Docker for GCP
-        run: gcloud auth configure-docker
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GKE_PROJECT }}
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker gcr.io
 
       - name: Build Docker image
         run: |
@@ -32,7 +37,8 @@ jobs:
       - name: Connect to GKE
         run: |
           gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER }} \
-          --zone ${{ secrets.GKE_ZONE }} --project ${{ secrets.GKE_PROJECT }}
+          --zone ${{ secrets.GKE_ZONE }} \
+          --project ${{ secrets.GKE_PROJECT }}
 
       - name: Deploy to Kubernetes
         run: |
@@ -41,3 +47,4 @@ jobs:
           kubectl apply -f k8s/frontend-service.yaml
           kubectl apply -f k8s/frontend-ingress.yaml
           kubectl rollout status deployment/user-frontend
+
