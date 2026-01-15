@@ -58,7 +58,7 @@ jobs:
         run: |
           kubectl apply -f Kubernet/frontend-cert.yaml
           kubectl apply -f Kubernet/user-frontend-deployment.yaml
-          kubectl apply -f Kubernet/frontend-service.yaml
+          kubectl apply -f Kubernet/user-frontend-service.yaml
           kubectl apply -f Kubernet/frontend-ingress.yaml
           kubectl rollout status deployment/user-frontend
 
