@@ -226,7 +226,7 @@ const { loginWithRedirect } = useAuth0();
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-10 text-gray-500 hover:text-gray-700"
+                  className="absolute right-4 top-10 text-gray-500 hover:text-gray-700 mt-1"
                 >
                   {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
                 </button>

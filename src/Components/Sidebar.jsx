@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Tooltip from "./Tooltip.jsx";
 import { NavLink, useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 import {
   Home,
   User,
@@ -11,12 +12,14 @@ import {
   ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
-
+import LogoutModal from "./LogoutModal.jsx";
 export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   const [isOpen, setIsOpen] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth); // ✅ track width
   const iconRef = useRef(null);
   const [hovered, setHovered] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
+
   /* Listen for screen size change */
   useEffect(() => {
     const handleResize = () => {
@@ -67,8 +70,10 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
         }}
         transition={{ duration: 0.35, ease: "easeInOut" }}
         className={`
-    h-screen theme-bg backdrop-blur-xl 
-    border-r border-white/40 shadow-xl flex flex-col 
+    fixed inset-y-0 left-0
+  theme-bg backdrop-blur-xl
+  border-r border-white/40 shadow-xl
+  flex flex-col
     ${isMobile ? "fixed z-50" : "md:static z-10"} 
   `}
       >
@@ -98,9 +103,6 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
           )}
         </div>
 
-        {/* ===== Scrollable middle area (menu items + card) =====
-      Use flex-1 + overflow-auto so this part scrolls independently.
-      Add padding so top & bottom content don't hide behind header/footer. */}
         <div
           className="flex-1 px-3 pb-2 overflow-auto space-y-3 sidebar-scroll"
           style={{ WebkitOverflowScrolling: "touch" }}
@@ -230,6 +232,26 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
               </div>
             )}
           </NavLink>
+
+          <button
+            onClick={() => {
+              setShowLogout(true);
+              isMobile && setIsMobileOpen(false);
+            }}
+            className="
+      w-full flex items-center gap-3 p-1 rounded-xl
+      bg-red-50 text-red-600 border border-red-200
+      hover:bg-red-100 transition shadow-sm mt-2
+    "
+          >
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-red-100">
+              <LogOut size={20} />
+            </div>
+
+            {(isOpen || isMobileOpen) && (
+              <span className="font-semibold text-[15px]">Logout</span>
+            )}
+          </button>
         </div>
       </motion.div>
 
@@ -275,6 +297,9 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
 `}
       </style>
 
+      {showLogout && (
+        <LogoutModal close={() => setShowLogout(false)} />
+      )}
 
     </>
 
