@@ -23,7 +23,13 @@ const PaymentSuccess = () => {
 
         if (res.data?.ok) {
           setStatus("paid");
-          setTimeout(() => navigate("/home"), 3000);
+          // navigate to /home and instruct Home to highlight step 3
+          setTimeout(() => navigate("/home", {
+  state: {
+    completedSteps: [2], // Buy credits completed
+    ctaStep: 3           // Recommend start interview
+  }
+}), 3000);
         } else {
           setStatus("unpaid");
         }
@@ -90,7 +96,15 @@ const PaymentSuccess = () => {
               </div>
 
               <button
-                onClick={() => navigate("/home")}
+               onClick={() =>
+  navigate("/home", {
+    state: {
+      completedSteps: [2],
+      ctaStep: 3,
+    },
+  })
+}
+
                 className="mt-6 w-full rounded-lg bg-indigo-600 py-3 text-white font-semibold hover:bg-indigo-700 transition"
               >
                 Go to Dashboard
