@@ -10,55 +10,55 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout repo
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Authenticate to GCP using Service Account JSON (from GitHub Secrets)
+      # 2️⃣ Authenticate to GCP
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # 3️⃣ Setup gcloud CLI
+      # 3️⃣ Setup gcloud
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GKE_PROJECT }}
 
-      # 4️⃣ 🔥 Install GKE auth plugin (REQUIRED)
+      # 4️⃣ Install GKE auth plugin
       - name: Install GKE auth plugin
         run: |
           gcloud components install gke-gcloud-auth-plugin --quiet
           echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
 
-      # 5️⃣ Configure Docker authentication for GCR
+      # 5️⃣ Configure Docker
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker gcr.io --quiet
 
-      # 6️⃣ Build Docker image
+      # 🔥 6️⃣ Build image with UNIQUE TAG
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }} .
+          docker build -t gcr.io/${{ secrets.GKE_PROJECT }}/frontend:${{ github.sha }} .
 
-      # 7️⃣ Push Docker image to GCR
+      # 🔥 7️⃣ Push image
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }}
+          docker push gcr.io/${{ secrets.GKE_PROJECT }}/frontend:${{ github.sha }}
 
-      # 8️⃣ Connect to GKE cluster
+      # 8️⃣ Connect to GKE
       - name: Connect to GKE
         run: |
           gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER }} \
             --zone ${{ secrets.GKE_ZONE }} \
             --project ${{ secrets.GKE_PROJECT }}
 
-      # 9️⃣ Deploy Kubernetes manifests
+      # 🔥 9️⃣ Update image + rollout
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f Kubernet/frontend-cert.yaml
-          kubectl apply -f Kubernet/user-frontend-deployment.yaml
-          kubectl apply -f Kubernet/user-frontend-service.yaml
-          kubectl apply -f Kubernet/frontend-ingress.yaml
+          kubectl set image deployment/user-frontend \
+            user-frontend=gcr.io/${{ secrets.GKE_PROJECT }}/frontend:${{ github.sha }}
+
           kubectl rollout status deployment/user-frontend
+
 
