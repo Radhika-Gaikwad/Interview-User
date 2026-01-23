@@ -32,19 +32,19 @@ jobs:
           gcloud components install gke-gcloud-auth-plugin --quiet
           echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
 
-      # 5️⃣ Configure Docker
-      - name: Configure Docker for GCR
+      # 5️⃣ Configure Docker for GCR
+      - name: Configure Docker
         run: gcloud auth configure-docker gcr.io --quiet
 
-      # 🔥 6️⃣ Build image with UNIQUE TAG
+      # 🔥 6️⃣ Build Docker image (FIXED NAME)
       - name: Build Docker image
         run: |
-          docker build -t gcr.io/${{ secrets.GKE_PROJECT }}/frontend:${{ github.sha }} .
+          docker build -t gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }} .
 
-      # 🔥 7️⃣ Push image
+      # 🔥 7️⃣ Push Docker image
       - name: Push Docker image
         run: |
-          docker push gcr.io/${{ secrets.GKE_PROJECT }}/frontend:${{ github.sha }}
+          docker push gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }}
 
       # 8️⃣ Connect to GKE
       - name: Connect to GKE
@@ -53,12 +53,10 @@ jobs:
             --zone ${{ secrets.GKE_ZONE }} \
             --project ${{ secrets.GKE_PROJECT }}
 
-      # 🔥 9️⃣ Update image + rollout
+      # 🔥 9️⃣ Deploy & Rollout
       - name: Deploy to Kubernetes
         run: |
           kubectl set image deployment/user-frontend \
-            user-frontend=gcr.io/${{ secrets.GKE_PROJECT }}/frontend:${{ github.sha }}
+            user-frontend=gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }}
 
           kubectl rollout status deployment/user-frontend
-
-
