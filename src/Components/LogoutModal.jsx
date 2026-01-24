@@ -9,20 +9,13 @@ export default function LogoutModal({ close }) {
   const { logout } = useAuth0();
 
   const handleLogout = () => {
-    // 🧹 1. Remove JWT token
     localStorage.removeItem("token");
-
-    // 🧹 2. Clear Auth0 session
     logout({
       logoutParams: {
         returnTo: window.location.origin + "/login",
       },
     });
-
-    // 🧹 3. Close modal (safe)
     close();
-
-    // (navigate is handled by returnTo)
   };
 
   return (

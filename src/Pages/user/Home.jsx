@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
+
+const CompletedTag = () => (
+  <div className="mt-2 text-sm text-green-600 font-semibold animate-fadeIn">
+    ✅ Completed
+  </div>
+);
+
 const Home = () => {
   const location = useLocation();
 
@@ -66,6 +73,9 @@ useEffect(() => {
           >
             📤 Upload Resume
           </button>
+
+          {completedSteps.includes(0) && <CompletedTag />}
+
         </div>
 
         {/* ARROW */}
@@ -97,6 +107,8 @@ useEffect(() => {
           >
             ▶️ Create Session
           </button>
+          {completedSteps.includes(1) && <CompletedTag />}
+
         </div>
 
         {/* ARROW */}
@@ -129,9 +141,8 @@ useEffect(() => {
             💰 Buy Credits
           </button>
 
-          {completedSteps.includes(2) && (
-            <div className="mt-2 text-sm text-green-600 font-semibold">✅ Completed</div>
-          )}
+     {completedSteps.includes(2) && <CompletedTag />}
+
         </div>
 
         {/* ARROW */}
@@ -172,14 +183,15 @@ useEffect(() => {
             🚀 Start Interview
           </button>
 
-          {ctaStep === 3 && (
-            <div className="mt-3 flex flex-col items-center gap-2">
-              <div className="text-5xl animate-bounce">👍</div>
-              <div className="text-sm text-indigo-700 font-semibold animate-pulse text-center">
-                We recommend starting your interview now
-              </div>
-            </div>
-          )}
+     {ctaStep === 3 && (
+  <div className="mt-3 flex flex-col items-center gap-2">
+    <div className="text-3xl animate-bounce">👆</div>
+    <div className="text-sm text-indigo-700 font-semibold animate-pulse text-center">
+      We recommend starting your interview now
+    </div>
+  </div>
+)}
+
         </div>
       </div>
 

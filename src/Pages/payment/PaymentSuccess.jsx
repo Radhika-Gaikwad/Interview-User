@@ -26,8 +26,8 @@ const PaymentSuccess = () => {
           // navigate to /home and instruct Home to highlight step 3
           setTimeout(() => navigate("/home", {
   state: {
-    completedSteps: [2], // Buy credits completed
-    ctaStep: 3           // Recommend start interview
+   completedSteps: [0, 1, 2],
+    ctaStep: 3  
   }
 }), 3000);
         } else {

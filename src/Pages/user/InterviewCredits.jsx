@@ -115,16 +115,18 @@ const DotGrid = ({ rows = 1, cols = 3, yellow = 0 }) => {
 
 const PlanCard = ({  plan, isSelected, onSelect, onBuy }) => {
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02 }}
-      onClick={() => onSelect(plan.id)} // 👈 ONLY select
-      className={`relative cursor-pointer p-5 rounded-2xl border-2
-        ${isSelected ? "ring-4 ring-indigo-200 bg-white/80" : "hover-faint-gradient"}
-      `}
-    >
+<motion.div
+  layout
+  initial={{ opacity: 0, y: 8 }}
+  animate={{ opacity: 1, y: 0 }}
+  whileHover={{ scale: 1.02 }}
+  onClick={() => onSelect(plan.id)}
+  className={`relative cursor-pointer p-5 rounded-2xl border-2
+    flex flex-col h-full
+    ${isSelected ? "ring-4 ring-indigo-200 bg-white/80" : "hover-faint-gradient"}
+  `}
+>
+
       {/* Top content */}
       <div className="flex items-start gap-4">
         {/* <div className="flex-shrink-0">
@@ -169,26 +171,27 @@ const PlanCard = ({  plan, isSelected, onSelect, onBuy }) => {
           </div>
         </div>
       </div>
+{/* Bottom Section */}
+<div className="mt-auto pt-4 flex items-center justify-between">
+  <div className="text-sm text-gray-600">
+    {plan.credits} credits • One-time
+  </div>
 
-      {/* Bottom Section — Push to end using mt-auto */}
-      <div className="mt-auto pt-4 flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          {plan.credits} credits • One-time
-        </div>
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      onBuy(plan);
+    }}
+    className={`px-3 py-1.5 rounded-lg font-semibold text-sm transition shadow-md
+      ${isSelected
+        ? "bg-white text-indigo-700 border border-indigo-200"
+        : "theme-primary"}
+    `}
+  >
+    {plan.cta} →
+  </button>
+</div>
 
-        {/* Buy button bottom-right FIX */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();     // 🔥 CRITICAL
-            onBuy(plan);             // 👈 BUY directly
-          }}
-          className={`px-3 py-1.5 rounded-lg font-semibold text-sm transition shadow-md
-            ${isSelected ? "bg-white text-indigo-700 border border-indigo-200" : "theme-primary"}
-          `}
-        >
-          {plan.cta} →
-        </button>
-      </div>
     </motion.div>
   );
 };
