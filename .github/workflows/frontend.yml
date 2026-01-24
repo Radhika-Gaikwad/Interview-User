@@ -10,43 +10,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout code
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      # 2️⃣ Authenticate to GCP using Service Account
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      # 3️⃣ Setup gcloud CLI
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GKE_PROJECT }}
 
+      # 4️⃣ Install GKE auth plugin
       - name: Install GKE auth plugin
         run: |
           gcloud components install gke-gcloud-auth-plugin --quiet
           echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
 
+      # 5️⃣ Configure Docker for GCR
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io --quiet
 
-      # 🔥 UNIQUE IMAGE TAG
+      # 6️⃣ Build Docker image (commit-based tag)
       - name: Build Docker image
         run: |
-          docker build -t gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }} .
+          docker build \
+            -t gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }} .
 
+      # 7️⃣ Push image to GCR
       - name: Push Docker image
         run: |
           docker push gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }}
 
+      # 8️⃣ Connect to GKE cluster
       - name: Connect to GKE
         run: |
           gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER }} \
             --zone ${{ secrets.GKE_ZONE }} \
             --project ${{ secrets.GKE_PROJECT }}
 
-      # 🔥 Force deployment update
+      # 9️⃣ Update Kubernetes Deployment (🔥 CORRECT CONTAINER NAME)
       - name: Deploy to Kubernetes
         run: |
           kubectl set image deployment/user-frontend \
