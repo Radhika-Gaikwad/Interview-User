@@ -113,19 +113,19 @@ const DotGrid = ({ rows = 1, cols = 3, yellow = 0 }) => {
   );
 };
 
-const PlanCard = ({  plan, isSelected, onSelect, onBuy }) => {
+const PlanCard = ({ plan, isSelected, onSelect, onBuy }) => {
   return (
-<motion.div
-  layout
-  initial={{ opacity: 0, y: 8 }}
-  animate={{ opacity: 1, y: 0 }}
-  whileHover={{ scale: 1.02 }}
-  onClick={() => onSelect(plan.id)}
-  className={`relative cursor-pointer p-5 rounded-2xl border-2
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02 }}
+      onClick={() => onSelect(plan.id)}
+      className={`relative cursor-pointer p-5 rounded-2xl border-2
     flex flex-col h-full
     ${isSelected ? "ring-4 ring-indigo-200 bg-white/80" : "hover-faint-gradient"}
   `}
->
+    >
 
       {/* Top content */}
       <div className="flex items-start gap-4">
@@ -171,26 +171,26 @@ const PlanCard = ({  plan, isSelected, onSelect, onBuy }) => {
           </div>
         </div>
       </div>
-{/* Bottom Section */}
-<div className="mt-auto pt-4 flex items-center justify-between">
-  <div className="text-sm text-gray-600">
-    {plan.credits} credits • One-time
-  </div>
+      {/* Bottom Section */}
+      <div className="mt-auto pt-4 flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          {plan.credits} credits • One-time
+        </div>
 
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      onBuy(plan);
-    }}
-    className={`px-3 py-1.5 rounded-lg font-semibold text-sm transition shadow-md
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onBuy(plan);
+          }}
+          className={`px-3 py-1.5 rounded-lg font-semibold text-sm transition shadow-md
       ${isSelected
-        ? "bg-white text-indigo-700 border border-indigo-200"
-        : "theme-primary"}
+              ? "bg-white text-indigo-700 border border-indigo-200"
+              : "theme-primary"}
     `}
-  >
-    {plan.cta} →
-  </button>
-</div>
+        >
+          {plan.cta} →
+        </button>
+      </div>
 
     </motion.div>
   );
@@ -225,218 +225,218 @@ const InfoPlate = () => {
 };
 
 const InterviewCredits = () => {
-const [selected, setSelected] = useState(null);
-const [activePlan, setActivePlan] = useState(null); // ✅ holds plan object
-const [showConfirm, setShowConfirm] = useState(false);
-const [showStripePrep, setShowStripePrep] = useState(false);
-const [isPaying, setIsPaying] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [activePlan, setActivePlan] = useState(null); // ✅ holds plan object
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showStripePrep, setShowStripePrep] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
 
-const [selectedPlanId, setSelectedPlanId] = useState(null); // visual selection
+  const [selectedPlanId, setSelectedPlanId] = useState(null); // visual selection
 
 
   return (
-  <>
-{showConfirm && activePlan && (
-  <ConfirmPlanModal
-    plan={activePlan}
-    onClose={() => setShowConfirm(false)}
-    onConfirm={() => {
-      setShowConfirm(false);
-      setShowStripePrep(true);
-    }}
-  />
-)}
+    <>
+      {showConfirm && activePlan && (
+        <ConfirmPlanModal
+          plan={activePlan}
+          onClose={() => setShowConfirm(false)}
+          onConfirm={() => {
+            setShowConfirm(false);
+            setShowStripePrep(true);
+          }}
+        />
+      )}
 
-{showStripePrep && activePlan && (
-  <PreStripeModal
-    plan={activePlan}
-    onPay={() => {
-      setIsPaying(true);
-      buyCredits({
-        title: activePlan.title,
-        amount: Number(activePlan.priceINR.replace(",", "")),
-        credits: activePlan.credits + activePlan.free,
-      });
-    }}
-    onBack={() => {
-      setShowStripePrep(false);
-      setShowConfirm(true);
-    }}
-    onClose={() => {
-      setShowStripePrep(false);
-      setActivePlan(null);
-    }}
-  />
-)}
+      {showStripePrep && activePlan && (
+        <PreStripeModal
+          plan={activePlan}
+          onPay={() => {
+            setIsPaying(true);
+            buyCredits({
+              title: activePlan.title,
+              amount: Number(activePlan.priceINR.replace(",", "")),
+              credits: activePlan.credits + activePlan.free,
+            });
+          }}
+          onBack={() => {
+            setShowStripePrep(false);
+            setShowConfirm(true);
+          }}
+          onClose={() => {
+            setShowStripePrep(false);
+            setActivePlan(null);
+          }}
+        />
+      )}
 
 
 
-    <div className="relative w-full theme-bg ">{/* pt-20 to offset fixed offer bar */}
-       <div className="sticky top-0 z-30">
-        <OfferBar />
-      </div>
-
-      <div className="mx-auto max-w-6xl px-4 md:px-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="text-center mt-6"
-        >
-          <div className="text-sm uppercase tracking-wider text-gray-500">PRICING</div>
-          <h1 className="text-2xl md:text-4xl font-semibold mt-2">
-            <span className="font-semibold">No Subscription</span>
-          </h1>
-          <p className="text-sm text-gray-600 mt-2 flex items-center justify-center gap-2">
-            <span className="text-lg">🔰</span>
-            <span>One-time payment</span>
-          </p>
-        </motion.div>
-
-      {/* Gray-100 Plate */}
-<motion.div
-  initial={{ opacity: 0, y: 6 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.05 }}
-  className="mt-6 p-4 rounded-xl bg-gray-100 border border-gray-200"
->
-  <div className="max-w-4xl mx-auto w-full">
-    
-    <div className="flex flex-col md:flex-row items-center justify-between w-full">
-
-      {/* --- POINTS ROW --- */}
-      <div className="flex w-full items-center justify-between">
-
-        {/* Point 1 */}
-        <div className="flex items-center gap-3 w-full justify-center">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">🔁</div>
-          <div className="text-sm">30-Day Money Back</div>
+      <div className="relative w-full theme-bg ">{/* pt-20 to offset fixed offer bar */}
+        <div className="sticky top-0 z-30">
+          <OfferBar />
         </div>
 
-        {/* Divider */}
-        <div className="hidden md:block w-px h-10 bg-gray-300"></div>
+        <div className="mx-auto max-w-6xl px-4 md:px-6">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="text-center mt-6"
+          >
+            <div className="text-sm uppercase tracking-wider text-gray-500">PRICING</div>
+            <h1 className="text-2xl md:text-4xl font-semibold mt-2">
+              <span className="font-semibold">No Subscription</span>
+            </h1>
+            <p className="text-sm text-gray-600 mt-2 flex items-center justify-center gap-2">
+              <span className="text-lg">🔰</span>
+              <span>One-time payment</span>
+            </p>
+          </motion.div>
 
-        {/* Point 2 */}
-        <div className="flex items-center gap-3 w-full justify-center">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center opacity-60">⌚</div>
-          <div className="text-sm">Credits Never Expire</div>
-        </div>
+          {/* Gray-100 Plate */}
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="mt-6 p-4 rounded-xl bg-gray-100 border border-gray-200"
+          >
+            <div className="max-w-4xl mx-auto w-full">
 
-        {/* Divider */}
-        <div className="hidden md:block w-px h-10 bg-gray-300"></div>
+              <div className="flex flex-col md:flex-row items-center justify-between w-full">
 
-        {/* Point 3 */}
-        <div className="flex items-center gap-3 w-full justify-center">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">🪙</div>
-          <div className="text-sm">1 Credit = 1h Interview</div>
-        </div>
+                {/* --- POINTS ROW --- */}
+                <div className="flex w-full items-center justify-between">
 
-      </div>
-    </div>
+                  {/* Point 1 */}
+                  <div className="flex items-center gap-3 w-full justify-center">
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">🔁</div>
+                    <div className="text-sm">30-Day Money Back</div>
+                  </div>
 
-  </div>
-</motion.div>
+                  {/* Divider */}
+                  <div className="hidden md:block w-px h-10 bg-gray-300"></div>
 
+                  {/* Point 2 */}
+                  <div className="flex items-center gap-3 w-full justify-center">
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center opacity-60">⌚</div>
+                    <div className="text-sm">Credits Never Expire</div>
+                  </div>
 
-        {/* First Row (3 cards) */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-{plansRow1.map((p) => (
-  <PlanCard
-    key={p.id}
-    plan={p}
-    isSelected={selectedPlanId === p.id}
-    onSelect={setSelectedPlanId}
-    onBuy={(plan) => {
-      setActivePlan(plan);
-      setShowConfirm(true);
-    }}
-  />
-))}
+                  {/* Divider */}
+                  <div className="hidden md:block w-px h-10 bg-gray-300"></div>
 
-        </div>
+                  {/* Point 3 */}
+                  <div className="flex items-center gap-3 w-full justify-center">
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">🪙</div>
+                    <div className="text-sm">1 Credit = 1h Interview</div>
+                  </div>
 
+                </div>
+              </div>
 
-
-{/* Split credits plate */}
-<motion.div
-  initial={{ opacity: 0, y: 6 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.05 }}
-  className="mt-6 p-4 rounded-xl bg-white border border-gray-200 
-             flex items-center justify-center min-h-[90px] text-center"
->
-  <div className="flex items-center gap-3 justify-center">
-    
-    <div className="w-8 h-8 rounded-md bg-indigo-50 flex items-center justify-center">[|]</div>
-
-    <div className="flex flex-col justify-center">
-      <div className="text-sm font-semibold leading-tight">
-        You can split credits into 30-minute sessions.
-      </div>
-      <div className="text-xs text-gray-500 leading-tight">
-        Use one credit for a 60-min interview or split into two 30-min interviews.
-      </div>
-    </div>
-
-  </div>
-</motion.div>
+            </div>
+          </motion.div>
 
 
-        {/* Second Row (3 cards) */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-{plansRow2.map((p) => (
-  <PlanCard
-    key={p.id}
-    plan={p}
-    isSelected={selectedPlanId === p.id}
-    onSelect={setSelectedPlanId}
-    onBuy={(plan) => {
-      setActivePlan(plan);
-      setShowConfirm(true);
-    }}
-  />
-))}
-
-        </div>
-
-        {/* CTA area */}
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
-          className="mt-8 rounded-xl p-6 glass-card border flex flex-col md:flex-row items-center justify-between gap-4"
-        >
-          <div>
-            <div className="text-lg font-semibold">Ready to buy credits?</div>
-           <div className="text-sm text-gray-600">
-  Selected plan: {selectedPlanId ? selectedPlanId.toUpperCase() : "None"}
-</div>
+          {/* First Row (3 cards) */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plansRow1.map((p) => (
+              <PlanCard
+                key={p.id}
+                plan={p}
+                isSelected={selectedPlanId === p.id}
+                onSelect={setSelectedPlanId}
+                onBuy={(plan) => {
+                  setActivePlan(plan);
+                  setShowConfirm(true);
+                }}
+              />
+            ))}
 
           </div>
 
-          <div className="flex items-center gap-3">
-      <button
-  disabled={!selectedPlanId}
-  onClick={() => {
-    const plan = [...plansRow1, ...plansRow2].find(
-      (p) => p.id === selectedPlanId
-    );
-    setActivePlan(plan);
-    setShowConfirm(true);
-  }}
-  className={`px-4 py-2 rounded-lg font-semibold
+
+
+          {/* Split credits plate */}
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="mt-6 p-4 rounded-xl bg-white border border-gray-200 
+             flex items-center justify-center min-h-[90px] text-center"
+          >
+            <div className="flex items-center gap-3 justify-center">
+
+              <div className="w-8 h-8 rounded-md bg-indigo-50 flex items-center justify-center">[|]</div>
+
+              <div className="flex flex-col justify-center">
+                <div className="text-sm font-semibold leading-tight">
+                  You can split credits into 30-minute sessions.
+                </div>
+                <div className="text-xs text-gray-500 leading-tight">
+                  Use one credit for a 60-min interview or split into two 30-min interviews.
+                </div>
+              </div>
+
+            </div>
+          </motion.div>
+
+
+          {/* Second Row (3 cards) */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plansRow2.map((p) => (
+              <PlanCard
+                key={p.id}
+                plan={p}
+                isSelected={selectedPlanId === p.id}
+                onSelect={setSelectedPlanId}
+                onBuy={(plan) => {
+                  setActivePlan(plan);
+                  setShowConfirm(true);
+                }}
+              />
+            ))}
+
+          </div>
+
+          {/* CTA area */}
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="mt-8 rounded-xl p-6 glass-card border flex flex-col md:flex-row items-center justify-between gap-4"
+          >
+            <div>
+              <div className="text-lg font-semibold">Ready to buy credits?</div>
+              <div className="text-sm text-gray-600">
+                Selected plan: {selectedPlanId ? selectedPlanId.toUpperCase() : "None"}
+              </div>
+
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                disabled={!selectedPlanId}
+                onClick={() => {
+                  const plan = [...plansRow1, ...plansRow2].find(
+                    (p) => p.id === selectedPlanId
+                  );
+                  setActivePlan(plan);
+                  setShowConfirm(true);
+                }}
+                className={`px-4 py-2 rounded-lg font-semibold
     ${!selectedPlanId ? "opacity-50 cursor-not-allowed" : "theme-primary"}
   `}
->
-  Buy Selected Plan
-</button>
+              >
+                Buy Selected Plan
+              </button>
 
-            <button className="px-4 py-2 rounded-lg border">Contact Support</button>
-          </div>
-        </motion.div>
+              <button className="px-4 py-2 rounded-lg border">Contact Support</button>
+            </div>
+          </motion.div>
+        </div>
       </div>
-    </div>
     </>
   );
 };
