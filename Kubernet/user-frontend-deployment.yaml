@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: user-frontend
-  labels:
-    app: user-frontend
 spec:
   replicas: 1
   selector:
@@ -16,10 +14,7 @@ spec:
     spec:
       containers:
         - name: user-frontend
-          image: gcr.io/interview-ai-482614/user-frontend:PLACEHOLDER
+          image: gcr.io/interview-ai-482614/user-frontend:REPLACED_BY_CICD
           imagePullPolicy: Always
           ports:
             - containerPort: 80
-
-
-

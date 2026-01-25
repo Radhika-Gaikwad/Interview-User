@@ -3,9 +3,10 @@ kind: Ingress
 metadata:
   name: frontend-ingress
   annotations:
-    kubernetes.io/ingress.class: "gce"
     networking.gke.io/managed-certificates: frontend-cert
+    kubernetes.io/ingress.allow-http: "true"
 spec:
+  ingressClassName: gce
   rules:
     - host: 34.54.116.200.nip.io
       http:
@@ -17,4 +18,3 @@ spec:
                 name: user-frontend-service
                 port:
                   number: 80
-

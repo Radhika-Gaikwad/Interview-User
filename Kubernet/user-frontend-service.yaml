@@ -5,9 +5,9 @@ metadata:
   annotations:
     cloud.google.com/backend-config: '{"default": "frontend-backendconfig"}'
 spec:
-  type: ClusterIP
   selector:
     app: user-frontend
   ports:
     - port: 80
       targetPort: 80
+  type: ClusterIP
