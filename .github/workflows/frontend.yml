@@ -14,13 +14,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Authenticate to GCP using Service Account
+      # 2️⃣ Authenticate to GCP
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # 3️⃣ Setup gcloud CLI
+      # 3️⃣ Setup gcloud
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
         with:
@@ -36,28 +36,29 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io --quiet
 
-      # 6️⃣ Build Docker image (commit-based tag)
+      # 6️⃣ Build Docker image (NO CACHE)
       - name: Build Docker image
         run: |
-          docker build \
+          docker build --no-cache \
             -t gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }} .
 
-      # 7️⃣ Push image to GCR
+      # 7️⃣ Push image
       - name: Push Docker image
         run: |
           docker push gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }}
 
-      # 8️⃣ Connect to GKE cluster
+      # 8️⃣ Connect to GKE
       - name: Connect to GKE
         run: |
           gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER }} \
             --zone ${{ secrets.GKE_ZONE }} \
             --project ${{ secrets.GKE_PROJECT }}
 
-      # 9️⃣ Update Kubernetes Deployment (🔥 CORRECT CONTAINER NAME)
+      # 9️⃣ Deploy & FORCE refresh
       - name: Deploy to Kubernetes
         run: |
           kubectl set image deployment/user-frontend \
             user-frontend=gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }}
 
-          kubectl rollout status deployment/user-frontend
+          kubectl rollout restart deployment user-frontend
+          kubectl rollout status deployment user-frontend
