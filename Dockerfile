@@ -1,22 +1,32 @@
+# =========================
 # 1️⃣ Build stage
+# =========================
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copy package.json & install dependencies
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy code and env
+# Copy source code
 COPY . .
-# Copy production env for VITE build
+
+# IMPORTANT: Vite must see env at build time
 COPY .env.production .env
 
-# Run build
+# Build Vite app
 RUN npm run build
 
-# 2️⃣ Serve stage
+# =========================
+# 2️⃣ Nginx serve stage
+# =========================
 FROM nginx:alpine
+
+# Copy built files
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
