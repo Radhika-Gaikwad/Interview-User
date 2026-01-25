@@ -16,10 +16,7 @@ spec:
     spec:
       containers:
         - name: user-frontend
-          image: gcr.io/interview-ai-482614/user-frontend:PLACEHOLDER
+          image: gcr.io/interview-ai-482614/user-frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
-
-
-
