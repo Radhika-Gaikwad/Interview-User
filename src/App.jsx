@@ -24,41 +24,43 @@ import Download from "./Pages/user/Download";
 import InterviewCredits from "./Pages/user/InterviewCredits";
 import PaymentSuccess from "./Pages/payment/PaymentSuccess";
 
+
 function App() {
+  console.log("BUILD:", import.meta.env.VITE_BUILD_ID);
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
 
       <Routes>
-  {/* ROOT */}
-  <Route path="/" element={<Navigate to="/home" replace />} />
+        {/* ROOT */}
+        <Route path="/" element={<Navigate to="/home" replace />} />
 
-  {/* PUBLIC ONLY */}
-  <Route element={<PublicOnlyRoute />}>
-    <Route path="/login" element={<Login />} />
-    <Route path="/signup" element={<Signup />} />
-    <Route path="/forgot-password" element={<ForgotPassword />} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/verify-email" element={<VerifyEmail />} />
-  </Route>
+        {/* PUBLIC ONLY */}
+        <Route element={<PublicOnlyRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+        </Route>
 
-  {/* AUTH CALLBACK */}
-  <Route path="/auth/callback" element={<AuthCallback />} />
+        {/* AUTH CALLBACK */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-  {/* PROTECTED */}
-  <Route element={<ProtectedRoute />}>
-    <Route element={<Layout />}>
-      <Route path="/home" element={<Home />} />
-      <Route path="/interview" element={<Interview />} />
-      <Route path="/resume" element={<Resume />} />
-      <Route path="/support" element={<Support />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/download" element={<Download />} />
-      <Route path="/buy-credits" element={<InterviewCredits />} />
-      <Route path="/payment-success" element={<PaymentSuccess />} />
-    </Route>
-  </Route>
-</Routes>
+        {/* PROTECTED */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/interview" element={<Interview />} />
+            <Route path="/resume" element={<Resume />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/download" element={<Download />} />
+            <Route path="/buy-credits" element={<InterviewCredits />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+          </Route>
+        </Route>
+      </Routes>
 
     </BrowserRouter>
   );
