@@ -5,7 +5,7 @@ metadata:
   annotations:
     cloud.google.com/backend-config: '{"default": "frontend-backendconfig"}'
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: user-frontend
   ports:
