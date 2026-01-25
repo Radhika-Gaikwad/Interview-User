@@ -36,9 +36,10 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io --quiet
 
-      # 6️⃣ Build Docker image (NO CACHE)
+      # 6️⃣ Build Docker image
       - name: Build Docker image
         run: |
+          echo "VITE_BUILD_ID=${{ github.sha }}" > .env.production
           docker build --no-cache \
             -t gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }} .
 
