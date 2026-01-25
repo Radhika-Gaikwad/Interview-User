@@ -36,26 +36,30 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io --quiet
 
-      # 6️⃣ Build Docker image
-      - name: Build Docker image
+      # 6️⃣ Create env for Vite (VERY IMPORTANT)
+      - name: Prepare env for Vite
         run: |
           echo "VITE_BUILD_ID=${{ github.sha }}" > .env.production
+
+      # 7️⃣ Build Docker image (NO CACHE)
+      - name: Build Docker image
+        run: |
           docker build --no-cache \
             -t gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }} .
 
-      # 7️⃣ Push image
+      # 8️⃣ Push image
       - name: Push Docker image
         run: |
           docker push gcr.io/${{ secrets.GKE_PROJECT }}/user-frontend:${{ github.sha }}
 
-      # 8️⃣ Connect to GKE
+      # 9️⃣ Connect to GKE
       - name: Connect to GKE
         run: |
           gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER }} \
             --zone ${{ secrets.GKE_ZONE }} \
             --project ${{ secrets.GKE_PROJECT }}
 
-      # 9️⃣ Deploy & FORCE refresh
+      # 🔟 Deploy & FORCE refresh
       - name: Deploy to Kubernetes
         run: |
           kubectl set image deployment/user-frontend \
