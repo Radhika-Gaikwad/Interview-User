@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, ArrowLeft, ArrowRight } from "lucide-react";
 import ResumeUploader from "./ResumeUploader";
-import Toast from "../routes/toast";
+import Toast from "../utils/toast";
 import { getResumesService } from "../Services/resume.service";
 import sessionService from "../Services/sessionService";
 import { uploadToGCS } from "../utils/gcsUpload";
