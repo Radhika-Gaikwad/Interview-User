@@ -1,10 +1,9 @@
-import React, { useState } from "react";
-import { Menu } from "lucide-react";
-import { useLocation } from "react-router-dom";
-import UploadModal from "../Components/UploadModal.jsx";
+import React, { useState, useRef } from "react";
 import { Coins } from "lucide-react";
-import StartSessionModal from "../Components/StartSessionModal.jsx";
-
+import { Menu, LogOut, User } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import Tooltip from "../Components/Tooltips.jsx";
+import LogoutModal from "../Components/LogoutModal.jsx"
 
 
 
@@ -21,6 +20,10 @@ export default function Navbar({ setIsMobileOpen, openUpload, isMobileOpen, open
     if (path.includes("support")) return "Email Support";
     return "Dashboard";
   };
+const [showProfileMenu, setShowProfileMenu] = useState(false);
+const [showLogout, setShowLogout] = useState(false);
+const profileRef = useRef(null);
+const navigate = useNavigate();
 
   // ✅ Check if user is on resume page
   const isResumePage = location.pathname.includes("resume");
@@ -96,7 +99,80 @@ export default function Navbar({ setIsMobileOpen, openUpload, isMobileOpen, open
             </button>
           </>
         )}
+
+<div ref={profileRef} className="relative">
+  <button
+    onClick={() => setShowProfileMenu((prev) => !prev)}
+    className={`
+      w-10 h-10 rounded-full
+      flex items-center justify-center
+      shadow-lg transition-all
+      ${showProfileMenu
+        ? "theme-primary scale-105 ring-2 ring-indigo-300"
+        : "theme-secondary hover:scale-105"}
+    `}
+  >
+    <User size={20} className="text-white" />
+  </button>
+
+  <Tooltip targetRef={profileRef} isVisible={showProfileMenu}>
+    <div className="p-2 space-y-1">
+
+      {/* Profile */}
+      <button
+        onClick={() => {
+          navigate("/profile");
+          setShowProfileMenu(false);
+        }}
+        className="
+          w-full flex items-center gap-3
+          px-3 py-2 rounded-xl
+          hover:hover-faint-gradient transition
+          text-sm font-medium
+        "
+      >
+        <span className="
+          w-8 h-8 rounded-lg flex items-center justify-center
+          theme-secondary shadow-inner
+        ">
+          <User size={16} className="text-white" />
+        </span>
+        <span className="theme-text">Profile</span>
+      </button>
+
+      <div className="h-px bg-gray-200/60 my-1" />
+
+      {/* Logout */}
+      <button
+        onClick={() => {
+          setShowLogout(true);
+          setShowProfileMenu(false);
+        }}
+        className="
+          w-full flex items-center gap-3
+          px-3 py-2 rounded-xl
+          hover:bg-red-50 transition
+          text-sm font-medium text-red-600
+        "
+      >
+        <span className="
+          w-8 h-8 rounded-lg flex items-center justify-center
+          bg-red-100
+        ">
+          <LogOut size={16} className="text-red-600" />
+        </span>
+        Logout
+      </button>
+
+    </div>
+  </Tooltip>
+</div>
+
+
       </div>
+{showLogout && (
+  <LogoutModal close={() => setShowLogout(false)} />
+)}
 
     </nav>
   );

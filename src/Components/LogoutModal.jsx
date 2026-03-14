@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
+import { createPortal } from "react-dom";
 
 export default function LogoutModal({ close }) {
   const navigate = useNavigate();
@@ -18,11 +19,12 @@ export default function LogoutModal({ close }) {
     close();
   };
 
-  return (
-    <div className="
-      fixed inset-0 bg-black/60 backdrop-blur-md 
-      flex items-center justify-center z-[200]
-    ">
+  return createPortal(
+ <div className="
+  fixed inset-0 bg-black/60
+  flex items-center justify-center z-[9999]
+">
+
       <motion.div
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -30,9 +32,9 @@ export default function LogoutModal({ close }) {
           bg-white w-[90%] max-w-md p-6 rounded-2xl relative
         "
       >
-        {/* Close Icon */}
+        {/* Close */}
         <button
-          className="absolute top-3 right-3 p-1 rounded-full hover:bg-white/40"
+          className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100"
           onClick={close}
         >
           <X size={20} />
@@ -49,10 +51,7 @@ export default function LogoutModal({ close }) {
         <div className="mt-6 flex gap-3">
           <button
             onClick={close}
-            className="
-              flex-1 py-2 rounded-xl glass 
-              text-gray-700 font-medium shadow
-            "
+            className="flex-1 py-2 rounded-xl glass text-gray-700 font-medium"
           >
             Cancel
           </button>
@@ -60,8 +59,7 @@ export default function LogoutModal({ close }) {
           <button
             onClick={handleLogout}
             className="
-              flex-1 py-2 rounded-xl 
-              bg-red-500 text-white font-semibold shadow
+              flex-1 py-2 rounded-xl bg-red-500 text-white font-semibold
               hover:scale-[1.03] transition
             "
           >
@@ -69,6 +67,7 @@ export default function LogoutModal({ close }) {
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }

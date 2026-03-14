@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Tooltip from "./Tooltip.jsx";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
+
 import {
   Home,
   User,
@@ -12,13 +12,15 @@ import {
   ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
-import LogoutModal from "./LogoutModal.jsx";
+
+import { getProfile } from "../Services/userService";
 export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   const [isOpen, setIsOpen] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth); // ✅ track width
   const iconRef = useRef(null);
   const [hovered, setHovered] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  const [credits, setCredits] = useState(null);
 
   /* Listen for screen size change */
   useEffect(() => {
@@ -36,6 +38,22 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [setIsMobileOpen]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadProfile = async () => {
+      try {
+        const p = await getProfile();
+        if (!mounted) return;
+        setCredits(p?.credits ?? 0);
+      } catch (err) {
+        console.error("Failed to load profile for sidebar:", err);
+      }
+    };
+
+    loadProfile();
+    return () => (mounted = false);
+  }, []);
 
   const isMobile = windowWidth < 768;
 
@@ -147,7 +165,11 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
           </nav>
 
 
-          {(isOpen || isMobile) && (
+        
+
+
+        </div>
+  {(isOpen || isMobile) && (
             <div className="px-0 mt-4">
               <div
                 className="
@@ -184,7 +206,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
                 </div>
 
                 <p className="text-sm text-gray-600 mt-2">
-                  You have <span className="font-semibold text-indigo-600">1.5</span> interview credits
+                  You have <span className="font-semibold text-indigo-600">{credits ?? "—"}</span> interview credits
                 </p>
 
                 <NavLink
@@ -201,58 +223,7 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
               </div>
             </div>
           )}
-
-
-        </div>
-
-        {/* ===== Footer / Profile - fixed at bottom ===== */}
-        <div className="p-2 border-t border-white/40 flex-shrink-0">
-          <NavLink
-            to="/profile"
-            onClick={() => isMobile && setIsMobileOpen(false)}
-            className={({ isActive }) =>
-              `
-          flex items-center gap-3 p-2 rounded-xl backdrop-blur-md border shadow
-          ${isActive ? "theme-primary text-white" : "bg-white/60 text-gray-800"}
-        `
-            }
-          >
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shadow-inner">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="12" cy="7" r="4" />
-                <path d="M4 21v-2a4 4 0 0 1 3-3.87" />
-                <path d="M20 21v-2a4 4 0 0 0-3-3.87" />
-              </svg>
-            </div>
-
-            {(isOpen || isMobileOpen) && (
-              <div>
-                <p className="font-semibold text-[15px]">Your Profile</p>
-                <p className="text-xs opacity-80">Manage Account</p>
-              </div>
-            )}
-          </NavLink>
-
-          <button
-            onClick={() => {
-              setShowLogout(true);
-              isMobile && setIsMobileOpen(false);
-            }}
-            className="
-      w-full flex items-center gap-3 p-1 rounded-xl
-      bg-red-50 text-red-600 border border-red-200
-      hover:bg-red-100 transition shadow-sm mt-2
-    "
-          >
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-red-100">
-              <LogOut size={20} />
-            </div>
-
-            {(isOpen || isMobileOpen) && (
-              <span className="font-semibold text-[15px]">Logout</span>
-            )}
-          </button>
-        </div>
+      
       </motion.div>
 
 

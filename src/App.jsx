@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-
+import { ToastProvider } from "./context/ToastContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 
@@ -29,7 +29,7 @@ function App() {
   console.log("BUILD:", import.meta.env.VITE_BUILD_ID);
   return (
     <BrowserRouter>
-      <Toaster position="top-right" />
+    <ToastProvider>
 
       <Routes>
         {/* ROOT */}
@@ -61,7 +61,7 @@ function App() {
           </Route>
         </Route>
       </Routes>
-
+</ToastProvider>
     </BrowserRouter>
   );
 }

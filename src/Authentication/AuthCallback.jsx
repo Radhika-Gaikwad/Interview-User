@@ -25,8 +25,9 @@ const AuthCallback = () => {
 
     socialLogin(payload)
       .then((res) => {
-        // ✅ IMPORTANT: backend returns data directly
-        localStorage.setItem("token", res.token);
+   localStorage.setItem("token", res.token);
+localStorage.setItem("email", res.user.email);
+localStorage.setItem("user", JSON.stringify(res.user));
 
         navigate("/home", { replace: true });
       })

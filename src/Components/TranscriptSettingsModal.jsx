@@ -54,17 +54,17 @@ export default function TranscriptSettingsModal({
           </label>
 
           <p className="text-gray-500 text-xs mb-4">
-            If you enable this option, a transcript/summary of the interview 
-            will be saved with an AI analysis. You can view and analyze it 
+            If you enable this option, a transcript/summary of the interview
+            will be saved with an AI analysis. You can view and analyze it
             later in your dashboard.
           </p>
         </div>
 
         {/* Legal Disclaimer */}
         <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-xs text-red-700 mb-6">
-          <strong>Legal Disclaimer:</strong> You must comply with all 
-          applicable transcribing laws. Many jurisdictions require consent 
-          from all parties before recording. Recording without consent may 
+          <strong>Legal Disclaimer:</strong> You must comply with all
+          applicable transcribing laws. Many jurisdictions require consent
+          from all parties before recording. Recording without consent may
           be illegal.
         </div>
 

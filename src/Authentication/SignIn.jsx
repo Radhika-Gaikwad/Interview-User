@@ -67,8 +67,12 @@ const SignIn = () => {
       const res = await loginUser(formData);
 
       if (res?.token) {
-        localStorage.setItem("token", res.token);
-      }
+  localStorage.setItem("token", res.token);
+  localStorage.setItem("email", res.user.email); // ✅ important
+  localStorage.setItem("user", JSON.stringify(res.user));
+}
+     console.log(res);
+      
 
       toast.success("Login successful");
       navigate("/home");
@@ -171,7 +175,14 @@ const SignIn = () => {
                   {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
                 </button>
               </div>
-
+<div className="text-right mt-2">
+  <span
+    onClick={() => navigate("/forgot-password")}
+    className="text-sm text-indigo-700 cursor-pointer hover:underline"
+  >
+    Forgot Password?
+  </span>
+</div>
               <button
                 type="submit"
                 className="w-full theme-primary py-3 rounded-xl shadow-xl font-semibold hover:scale-[1.03] transition"

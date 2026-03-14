@@ -4,7 +4,8 @@ import LogoutModal from "../../Components/LogoutModal";
 import { getProfile, updateProfile, logoutUser } from "../../Services/userService";
 import { Mail, Briefcase, LogOut, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import ChangePasswordModal from "../../Components/ChangePasswordModal";
+import AILoader from "../../Components/AILoader"; 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -13,7 +14,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
-
+const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -52,7 +53,7 @@ const Profile = () => {
     }
   };
 
-  if (loading) return <div className="theme-bg min-h-screen" />;
+ if (loading) return <AILoader text="Loading Profile..." />;
 
   return (
     <div className="theme-bg min-h-screen">
@@ -156,6 +157,9 @@ const Profile = () => {
                   </button>
                 )}
               </div>
+              <div className="mt-3 text-sm text-gray-700">
+                <strong>Interview Credits:</strong> <span className="text-indigo-600">{profile?.credits ?? 0}</span>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -171,12 +175,13 @@ const Profile = () => {
           </h2>
 
           <div className="space-y-4 text-sm text-gray-700">
-            <div className="flex items-center gap-3 cursor-pointer hover:text-indigo-600">
-              <Settings size={18} /> Change Password
-            </div>
-            <div className="flex items-center gap-3 cursor-pointer hover:text-indigo-600">
-              <Settings size={18} /> Privacy Settings
-            </div>
+           <div
+  onClick={() => setShowChangePassword(true)}
+  className="flex items-center gap-3 cursor-pointer hover:text-indigo-600"
+>
+  <Settings size={18} /> Change Password
+</div>
+            
           </div>
         </motion.div>
       </div>
@@ -191,6 +196,12 @@ const Profile = () => {
           }}
         />
       )}
+
+      {showChangePassword && (
+  <ChangePasswordModal
+    onClose={() => setShowChangePassword(false)}
+  />
+)}
     </div>
   );
 };
