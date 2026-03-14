@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, ArrowLeft, ArrowRight } from "lucide-react";
-import Toast from "../utils/Toast";
+import Toast from "../utils/toast";
 import ResumeUploader from "./ResumeUploader";
 import { getResumesService } from "../Services/resume.service";
 import { uploadToGCS } from "../utils/gcsUpload";
