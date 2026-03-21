@@ -4,6 +4,7 @@ import ZoomLogo from "../assets/ZoomLogo.png";
 import MeetLogo from "../assets/GoogleMeet.png";
 import TeamsLogo from "../assets/Teams.png";
 import WhatsappLogo from "../assets/Whatsapp.png";
+import { getUserCredits } from "../Services/userService";
 
 export default function ConnectModal({
   isOpen,
@@ -171,18 +172,31 @@ export default function ConnectModal({
                 }
               }
 
-              try {
-                const { session, user } = await onActivate({
-                  shareAudio,
-                  connectionMethod: selectedMethod,
-                  meetingLink: meetingLink || "",
-                });
+           
+  try {
+    // ✅ Start session (deduct credits)
+    await onActivate({
+      shareAudio,
+      connectionMethod: selectedMethod,
+      meetingLink: meetingLink || "",
+    });
 
-                console.log("Credits after deduction:", user.credits);
+    // ✅ ALWAYS fetch latest credits from server
+    const latestCredits = await getUserCredits();
 
-                onClose(); // close modal
-                window.open(url, "_blank");
-              } catch (err) {
+    // ✅ Update globally (Sidebar will auto-update)
+    localStorage.setItem("credits", latestCredits);
+
+    window.dispatchEvent(
+      new CustomEvent("creditsUpdated", {
+        detail: { credits: latestCredits },
+      })
+    );
+
+    onClose();
+    window.open(url, "_blank");
+
+  } catch (err) {
                 alert(err.message || "Failed to start session");
               }
             }}

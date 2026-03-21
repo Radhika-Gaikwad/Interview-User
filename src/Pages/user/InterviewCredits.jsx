@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import {  AnimatePresence } from "framer-motion";
 import { ShoppingCart, Coins, CreditCard } from "lucide-react";
 import { buyCredits } from "../../Services/paymentService";
 import PreStripeModal from "../../Components/PreStripeModal";
@@ -225,7 +225,6 @@ const InfoPlate = () => {
 };
 
 const InterviewCredits = () => {
-  const [selected, setSelected] = useState(null);
   const [activePlan, setActivePlan] = useState(null); // ✅ holds plan object
   const [showConfirm, setShowConfirm] = useState(false);
   const [showStripePrep, setShowStripePrep] = useState(false);

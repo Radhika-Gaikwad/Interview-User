@@ -15,3 +15,14 @@ export const getResumesService = (page = 1, limit = 6) => {
 export const deleteResumeService = (id) => {
   return axiosInstance.delete(`/resume/${id}`);
 };
+
+export const getPreviewSrc = async (url) => {
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  });
+
+  const data = await res.json();
+  return data.url;
+};

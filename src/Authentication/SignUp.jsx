@@ -60,35 +60,41 @@ const { loginWithRedirect } = useAuth0();
   };
 
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
+ const handleSignup = async (e) => {
+  e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
-      return;
+  if (formData.password !== formData.confirmPassword) {
+    toast.error("Passwords do not match");
+    return;
+  }
+
+  try {
+    const res = await signupUser({
+      fullName: formData.fullName,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role,
+    });
+
+    if (res?.token) {
+      localStorage.setItem("token", res.token);
     }
 
-    try {
-      const res = await signupUser({
-        fullName: formData.fullName,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
-      });
+    toast.success("Signup successful 🎉");
+    navigate("/home", { replace: true });
 
-      // Store returned token (dev-friendly) so client can use it immediately
-      if (res?.token) {
-        localStorage.setItem("token", res.token);
-      }
+  } catch (err) {
+    console.log("Signup error:", err);
 
-      // Navigate to home
-      navigate("/home", { replace: true });
-    } catch (err) {
-      alert(err.response?.data?.message || "Signup failed");
-    }
-  };
+    // ✅ Extract backend error safely
+    const message =
+      err?.response?.data?.message ||   // backend message
+      err?.message ||                  // fallback
+      "Signup failed. Please try again.";
 
-
+    toast.error(message);
+  }
+};
 
   const handleSocialLogin = async (connection) => {
     setAuthProvider(connection);

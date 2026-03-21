@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import LogoutModal from "../../Components/LogoutModal";
 import { getProfile, updateProfile, logoutUser } from "../../Services/userService";
 import { Mail, Briefcase, LogOut, Settings } from "lucide-react";

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import api from "../../utils/axiosInstance";
-
+import { getUserCredits } from "../../Services/userService";
 const PaymentSuccess = () => {
   const [status, setStatus] = useState("verifying");
   const location = useLocation();
@@ -12,8 +11,8 @@ const PaymentSuccess = () => {
     const params = new URLSearchParams(location.search);
     const session_id = params.get("session_id");
 
-    if (!session_id) {
-      setStatus("missing");
+      if (!session_id) {
+        setStatus("missing");
       return;
     }
 
@@ -21,16 +20,38 @@ const PaymentSuccess = () => {
       try {
         const res = await api.post("/users/verify-checkout", { session_id });
 
-        if (res.data?.ok) {
-          setStatus("paid");
-          // navigate to /home and instruct Home to highlight step 3
-          setTimeout(() => navigate("/home", {
-  state: {
-   completedSteps: [0, 1, 2],
-    ctaStep: 3  
-  }
-}), 3000);
-        } else {
+       if (res.data?.ok) {
+      setStatus("paid");
+
+      // ✅ CALL YOUR EXISTING SERVICE
+      try {
+        const credits = await getUserCredits();
+
+        console.log("Updated credits:", credits);
+
+        // ✅ store (temporary solution)
+        localStorage.setItem("credits", credits);
+        window.dispatchEvent(
+  new CustomEvent("creditsUpdated", {
+    detail: { credits },
+  })
+);
+
+      } catch (err) {
+        console.error("Error fetching credits:", err);
+      }
+
+      // redirect
+      setTimeout(() =>
+        navigate("/home", {
+          state: {
+            completedSteps: [0, 1, 2],
+            ctaStep: 3,
+          },
+        }), 3000
+      );
+
+    } else {
           setStatus("unpaid");
         }
       } catch (err) {

@@ -3,11 +3,11 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import UploadModal from "../Components/UploadModal";
 import CreateSession from "../Components/CreateSession";
-import { useToast } from "../context/ToastContext";
+
 import { Outlet } from "react-router-dom";
 import sessionService from "../Services/sessionService";
 import { uploadToGCS } from "../utils/gcsUpload";
-
+import { showToast } from "../utils/showToastService";
 export default function Layout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -18,7 +18,7 @@ export default function Layout() {
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
 
-  const { showToast } = useToast();
+
 
   /* Prevent body scroll on mobile sidebar */
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function Layout() {
               window.dispatchEvent(new Event("resume-updated"));
             return response;
           } catch (error) {
-            showToast("Upload failed", "error");
+           showToast("error", "Upload failed");
             throw error;
           }
         }}

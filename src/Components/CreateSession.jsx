@@ -11,7 +11,7 @@ import MeetLogo from "../assets/GoogleMeet.png";
 import TeamsLogo from "../assets/Teams.png";
 import WhatsappLogo from "../assets/Whatsapp.png";
 import ResumeProcessingLoader from "./ResumeProcessingLoader";
-import {getProfile} from "../Services/userService";
+import { getUserCredits } from "../Services/userService"; // add at top
 
 export default function CreateSession({ open, onClose, onCreated }) {
   const [step, setStep] = useState(1);
@@ -867,8 +867,19 @@ onCreated?.(session);
         aiModel: form.aiModel,
       });
 
-      // Refresh user profile / credits
-      const updatedUser = await getProfile();
+       // 2️⃣ Fetch latest credits from API ✅
+    const credits = await getUserCredits();
+
+    // 3️⃣ Update globally (same as your working code)
+    if (typeof credits === "number") {
+      localStorage.setItem("credits", credits);
+
+      window.dispatchEvent(
+        new CustomEvent("creditsUpdated", {
+          detail: { credits },
+        })
+      );
+    }
       onClose(); // close modal
 
       // Determine URL to open

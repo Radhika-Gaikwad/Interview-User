@@ -1,9 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
-import { ToastProvider } from "./context/ToastContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
-
+import ToastContainer from "./utils/ToastContainer";
 import AuthCallback from "./Authentication/AuthCallback";
 
 import Login from "./Authentication/SignIn";
@@ -24,18 +22,16 @@ import Download from "./Pages/user/Download";
 import InterviewCredits from "./Pages/user/InterviewCredits";
 import PaymentSuccess from "./Pages/payment/PaymentSuccess";
 
-
 function App() {
   console.log("BUILD:", import.meta.env.VITE_BUILD_ID);
+
   return (
     <BrowserRouter>
-    <ToastProvider>
+      <ToastContainer />
 
       <Routes>
-        {/* ROOT */}
         <Route path="/" element={<Navigate to="/home" replace />} />
 
-        {/* PUBLIC ONLY */}
         <Route element={<PublicOnlyRoute />}>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -44,10 +40,8 @@ function App() {
           <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
 
-        {/* AUTH CALLBACK */}
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* PROTECTED */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/home" element={<Home />} />
@@ -61,11 +55,8 @@ function App() {
           </Route>
         </Route>
       </Routes>
-</ToastProvider>
     </BrowserRouter>
   );
 }
 
 export default App;
-
-

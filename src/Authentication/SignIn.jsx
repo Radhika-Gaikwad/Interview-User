@@ -6,9 +6,8 @@ import loginImg from "../assets/1.png";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../Services/authService";
 import { useAuth0 } from "@auth0/auth0-react";
-import toast from "react-hot-toast";
 import SocialAuthLoader from "../Components/SocialAuthLoader";
-
+import { showToast } from "../utils/showToastService";
 /* ================= ICONS ================= */
 
 const GoogleIcon = (
@@ -60,26 +59,28 @@ const SignIn = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 🔐 Email/password login
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await loginUser(formData);
+const handleLogin = async (e) => {
+  e.preventDefault();
+  try {
+    const res = await loginUser(formData);
 
-      if (res?.token) {
-  localStorage.setItem("token", res.token);
-  localStorage.setItem("email", res.user.email); // ✅ important
-  localStorage.setItem("user", JSON.stringify(res.user));
-}
-     console.log(res);
-      
-
-      toast.success("Login successful");
-      navigate("/home");
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Login failed");
+    if (res?.token) {
+      localStorage.setItem("token", res.token);
+      localStorage.setItem("email", res.user.email);
+      localStorage.setItem("user", JSON.stringify(res.user));
     }
-  };
+
+  showToast("success", "Login Successful");
+
+    // delay navigation for animation
+    setTimeout(() => {
+      navigate("/home");
+    }, 1800);
+
+  } catch (err) {
+   showToast("error", err?.response?.data?.message || "Login failed");
+  }
+};
 
   // 🌐 Social login (redirect ONLY)
   const handleSocialLogin = async (connection) => {

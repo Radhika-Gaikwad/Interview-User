@@ -37,6 +37,12 @@ export const endSession = async (id, endAt) => {
   const { data } = await api.post(`/sessions/${id}/end`, { endAt });
   return data;
 };
+export const duplicateSession = async (id) => {
+  const res = await api.post(`/sessions/${id}/duplicate`);
+  return res.data;
+};
+
+
 
 export default {
   createSession,
@@ -46,4 +52,6 @@ export default {
   deleteSession,
   connectSession,
   endSession,
+  duplicateSession,
+
 };

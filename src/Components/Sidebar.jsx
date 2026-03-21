@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect} from "react";
 import Tooltip from "./Tooltip.jsx";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 import {
   Home,
@@ -11,16 +11,16 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import { motion } from "framer-motion";
+
 
 import { getProfile } from "../Services/userService";
 export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   const [isOpen, setIsOpen] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth); // ✅ track width
-  const iconRef = useRef(null);
-  const [hovered, setHovered] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
-  const [credits, setCredits] = useState(null);
+  const [credits, setCredits] = useState(() => {
+    return Number(localStorage.getItem("credits")) || 0;
+  });
 
   /* Listen for screen size change */
   useEffect(() => {
@@ -40,18 +40,49 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
   }, [setIsMobileOpen]);
 
   useEffect(() => {
+    const handleCreditsUpdate = (event) => {
+      const newCredits = event.detail?.credits;
+
+      if (typeof newCredits === "number") {
+        console.log("Sidebar received credits:", newCredits);
+
+        setCredits(newCredits);
+
+        // ✅ Sync localStorage again
+        localStorage.setItem("credits", newCredits);
+      }
+    };
+
+    window.addEventListener("creditsUpdated", handleCreditsUpdate);
+
+    return () => {
+      window.removeEventListener("creditsUpdated", handleCreditsUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
+
     const loadProfile = async () => {
       try {
         const p = await getProfile();
         if (!mounted) return;
-        setCredits(p?.credits ?? 0);
+
+        const serverCredits = p?.credits ?? 0;
+        setCredits(prev => {
+          // avoid unnecessary re-render if same value
+          if (prev === serverCredits) return prev;
+          return serverCredits;
+        });
+
+        localStorage.setItem("credits", serverCredits);
       } catch (err) {
         console.error("Failed to load profile for sidebar:", err);
       }
     };
 
     loadProfile();
+
     return () => (mounted = false);
   }, []);
 
@@ -64,7 +95,6 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
     { name: "Download Desktop App", icon: <Download size={22} />, path: "/download" },
     { name: "Email Support", icon: <Mail size={22} />, path: "/support" },
   ];
-
 
   return (
     <>
@@ -127,9 +157,6 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
         >
           <nav className="md:space-y-2 space-y-1 mb-2">
             {menuItems.map((item, index) => {
-              const iconRef = useRef(null); // per-item ref
-              const [hovered, setHovered] = useState(false); // per-item hover
-
               return (
                 <NavLink
                   key={index}
@@ -137,27 +164,18 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
                   onClick={() => isMobile && setIsMobileOpen(false)}
                   className={({ isActive }) =>
                     `
-          relative group flex items-center gap-4 p-1 rounded-xl cursor-pointer
-          backdrop-blur-md border border-gray-100 transition-all shadow-sm
-          ${isActive ? "theme-primary text-white" : "text-gray-800 bg-white/60"}
-        `
+        relative group flex items-center gap-4 p-1 rounded-xl cursor-pointer
+        backdrop-blur-md border border-gray-100 transition-all shadow-sm
+        ${isActive ? "theme-primary text-white" : "text-gray-800 bg-white/60"}
+      `
                   }
-                  onMouseEnter={() => setHovered(true)}
-                  onMouseLeave={() => setHovered(false)}
                 >
-                  <div ref={iconRef} className="w-10 h-10 flex items-center justify-center rounded-lg">
+                  <div className="w-10 h-10 flex items-center justify-center rounded-lg">
                     {item.icon}
                   </div>
 
                   {(isOpen || isMobile) && (
                     <span className="text-[15px] font-medium">{item.name}</span>
-                  )}
-
-                  {/* Remove inline tooltip */}
-                  {!isOpen && !isMobile && (
-                    <Tooltip targetRef={iconRef} isVisible={hovered}>
-                      {item.name}
-                    </Tooltip>
                   )}
                 </NavLink>
               );
@@ -165,65 +183,65 @@ export default function Sidebar({ isMobileOpen, setIsMobileOpen }) {
           </nav>
 
 
-        
+
 
 
         </div>
-  {(isOpen || isMobile) && (
-            <div className="px-0 mt-4">
-              <div
-                className="
+        {(isOpen || isMobile) && (
+          <div className="px-0 mt-4">
+            <div
+              className="
         rounded-xl p-4 backdrop-blur-md 
         bg-white/60 border border-gray-100 shadow-sm
         hover:shadow-md transition-all group
       "
-              >
-                {/* Icon + Heading */}
-                <div className="flex items-center gap-3">
-                  <div className="
+            >
+              {/* Icon + Heading */}
+              <div className="flex items-center gap-3">
+                <div className="
             w-10 h-10 flex items-center justify-center rounded-lg
             bg-indigo-100 text-theme-text  
             shadow-inner group-hover:scale-110 transition
           ">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-6 h-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.5"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M7 8h10M7 12h6m-6 4h8M5 20l2-2h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v14z"
-                      />
-                    </svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7 8h10M7 12h6m-6 4h8M5 20l2-2h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v14z"
+                    />
+                  </svg>
 
-                  </div>
-
-                  <h3 className="text-[15px] font-semibold text-gray-800">Interview Credit</h3>
                 </div>
 
-                <p className="text-sm text-gray-600 mt-2">
-                  You have <span className="font-semibold text-indigo-600">{credits ?? "—"}</span> interview credits
-                </p>
+                <h3 className="text-[15px] font-semibold text-gray-800">Interview Credit</h3>
+              </div>
 
-                <NavLink
-                  to="/buy-credits"
-                  onClick={() => isMobile && setIsMobileOpen(false)}
-                  className="
+              <p className="text-sm text-gray-600 mt-2">
+                You have <span className="font-semibold text-indigo-600">{credits !== null ? credits : "—"}</span> interview credits
+              </p>
+
+              <NavLink
+                to="/buy-credits"
+                onClick={() => isMobile && setIsMobileOpen(false)}
+                className="
           mt-3 block w-full py-2 rounded-lg 
           theme-primary text-white font-semibold
           shadow-sm hover:shadow-md hover:scale-[1.01] transition text-center
         "
-                >
-                  Get Credit
-                </NavLink>
-              </div>
+              >
+                Get Credit
+              </NavLink>
             </div>
-          )}
-      
+          </div>
+        )}
+
       </motion.div>
 
 

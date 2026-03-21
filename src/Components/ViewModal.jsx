@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { getPreviewSrc } from "../utils/getPreviewSrc";
 import { X, Download } from "lucide-react";
 
@@ -22,6 +22,8 @@ const renderSimpleList = (title, items) => {
   );
 };
 export default function ViewModal({ open, item, onClose }) {
+   const [previewSrc, setPreviewSrc] = useState("");
+
   useEffect(() => {
     if (open) {
       const prev = document.body.style.overflow;
@@ -30,10 +32,59 @@ export default function ViewModal({ open, item, onClose }) {
     }
   }, [open]);
 
+  // ✅ LOAD PREVIEW (SIGNED URL)
+  useEffect(() => {
+    const loadPreview = async () => {
+      if (!item?.previewUrl) return;
+
+      try {
+        const url = await getPreviewSrc(item.previewUrl);
+        setPreviewSrc(url);
+      } catch (err) {
+        console.error("Preview load failed:", err);
+      }
+    };
+
+    loadPreview();
+  }, [item]);
+
+  useEffect(() => {
+    if (open) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => (document.body.style.overflow = prev || "");
+    }
+  }, [open]);
+
+  // ✅ DOWNLOAD FIX (SIGNED URL)
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(item.downloadUrl, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await res.json();
+
+      // ✅ direct download
+      window.open(data.url, "_blank");
+
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
+  };
+
+  if (!open || !item) return null;
+
+  
+
   if (!open || !item) return null;
 
   const data = item.parsedData || {};
   const contact = data.contact || {};
+
+
 
   return (
     <div className="fixed inset-0 z-[999999] flex items-center justify-center animate-fadeIn">
@@ -297,32 +348,39 @@ export default function ViewModal({ open, item, onClose }) {
 {renderSimpleList("Achievements", data.achievements)}
 {renderSimpleList("Languages", data.languages)}
 {renderSimpleList("Interests", data.interests)}
-         {/* Resume Preview */}
-{item.previewUrl && (
-  <div className="glass-card rounded-xl overflow-hidden">
+
+
+
+ <div className="p-4">
+   <div className="glass-card rounded-xl overflow-hidden">
     <h4 className="text-lg font-semibold theme-text px-5 pt-5">
       Resume Preview
     </h4>
-
-    <iframe
-      src={getPreviewSrc(item.previewUrl)}
-      title="Resume Preview"
-      className="w-full h-[500px] mt-4"
-    />
-  </div>
-)}
+          {previewSrc ? (
+            <iframe
+              src={previewSrc}
+              className="w-full h-[500px]"
+              title="Resume Preview"
+            />
+          ) : (
+            <p className="text-center text-gray-500">
+              Loading preview...
+            </p>
+          )}
+          </div>
+        </div>
         </div>
 
         {/* FOOTER */}
         <div className="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-          <a
-            href={item.downloadUrl}
+          <button
+            onClick={handleDownload}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-5 py-2 rounded-xl theme-primary shadow-lg hover:brightness-110 transition"
           >
             <Download size={18} /> Resume
-          </a>
+          </button>
 
           <button
             onClick={onClose}
