@@ -1,7 +1,7 @@
 import React, { useState, useEffect} from "react";
 import Tooltip from "./Tooltip.jsx";
 import { NavLink } from "react-router-dom";
-
+import { motion } from "framer-motion";
 import {
   Home,
   User,

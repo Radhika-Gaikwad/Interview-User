@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {  AnimatePresence } from "framer-motion";
+import {  AnimatePresence, motion } from "framer-motion";
 import { ShoppingCart, Coins, CreditCard } from "lucide-react";
 import { buyCredits } from "../../Services/paymentService";
 import PreStripeModal from "../../Components/PreStripeModal";

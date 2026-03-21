@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../utils/axiosInstance";
 import { getUserCredits } from "../../Services/userService";
+import { AnimatePresence, motion } from "framer-motion";
+
 const PaymentSuccess = () => {
   const [status, setStatus] = useState("verifying");
   const location = useLocation();

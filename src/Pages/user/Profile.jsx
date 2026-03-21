@@ -5,6 +5,8 @@ import { Mail, Briefcase, LogOut, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ChangePasswordModal from "../../Components/ChangePasswordModal";
 import AILoader from "../../Components/AILoader"; 
+import { motion } from "framer-motion";
+
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
