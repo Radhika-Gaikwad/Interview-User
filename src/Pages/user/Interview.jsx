@@ -581,7 +581,7 @@ window.dispatchEvent(new Event("session-updated"));
 
           {/* footer / pagination */}
           <div className="border-t px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
-            <div className="text-sm text-gray-600">Showing {(page - 1) * PAGE_SIZE + 1} – {Math.min(page * PAGE_SIZE, totalRecords)} of {totalRecords}</div>
+            <div className="text-sm text-gray-600">Showing {(page - 1) * PAGE_SIZE + 1} – {Math.min(page * PAGE_SIZE, totalRecords)} of {totalRecords} Sessions</div>
 
             <div className="flex items-center gap-2">
               <button disabled={page === 1} onClick={() => setPage(page - 1)} className={`px-3 py-1 rounded-md glass ${page === 1 ? "opacity-50" : "hover:scale-105"}`}>

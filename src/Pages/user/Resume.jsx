@@ -497,7 +497,7 @@ if (loading) {
 
             <span className="text-sm text-gray-600">
               Showing {(page - 1) * PAGE_SIZE + 1}–
-              {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems}
+              {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems} Resumes
             </span>
 
             <div className="flex items-center gap-2">
