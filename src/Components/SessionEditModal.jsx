@@ -5,6 +5,8 @@ import ResumeUploader from "./ResumeUploader";
 import { getResumesService } from "../Services/resume.service";
 import { uploadToGCS } from "../utils/gcsUpload";
 import ResumeProcessingLoader from "./ResumeProcessingLoader"; 
+import { getPreviewSrc } from "../utils/getPreviewSrc";
+
 export default function SessionEditModal({
   open,
   item,
@@ -20,7 +22,8 @@ export default function SessionEditModal({
   const [isUploading, setIsUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
-
+    const [previewUrl, setPreviewUrl] = useState("");
+const [signedPreview, setSignedPreview] = useState("");
   useEffect(() => {
   if (resumeMode === "existing") {
     getResumesService()
@@ -32,6 +35,25 @@ export default function SessionEditModal({
   }
 }, [resumeMode]);
 
+
+useEffect(() => {
+  const loadPreview = async () => {
+    if (!previewUrl) {
+      setSignedPreview("");
+      return;
+    }
+
+    try {
+      const url = await getPreviewSrc(previewUrl);
+      setSignedPreview(url);
+    } catch (err) {
+      console.error("Preview failed:", err);
+      setSignedPreview("");
+    }
+  };
+
+  loadPreview();
+}, [previewUrl]);
 const resetUploadState = () => {
   setField("resumeTitle", "");
   setField("resumeFile", null);
@@ -61,12 +83,44 @@ useEffect(() => {
     autoExtend: true,
   });
 
-  const [previewUrl, setPreviewUrl] = useState("");
 
-  /* ================= LOAD DATA ================= */
-  useEffect(() => {
-    if (!open) setToasts([]);
-  }, [open]);
+
+useEffect(() => {
+  if (!item || !open) return;
+
+  const load = async () => {
+    const raw = item.raw || item;
+
+    const previewLink =
+      raw.resumePreviewUrl ||
+      (raw.resumeId?._id ? `/api/resume/view/${raw.resumeId._id}` : "");
+
+    const downloadLink = raw.resumeDownloadUrl || raw.resumeUrl || "";
+
+    const finalPreview = previewLink || downloadLink;
+
+    const signed = await getPreviewSrc(finalPreview);
+
+    setForm({
+      company: raw.company || "",
+      position: raw.position || "",
+      jobDescription: raw.jobDescription || "",
+      skills: (raw.skills || []).join(", "),
+      language: raw.language || "English",
+      resumeUrl: finalPreview,
+      download: downloadLink,
+      resumeTitle: raw.selectedResumeName || raw.resumeName || "",
+      durationMinutes: raw.durationMinutes || 30,
+      autoExtend: raw.autoExtend ?? true,
+    });
+
+    setPreviewUrl(signed);
+    setResumeMode("current");
+    setStep(1);
+  };
+
+  load();
+}, [item, open]);
 
  useEffect(() => {
   if (!item || !open) return;
@@ -392,199 +446,211 @@ const validateStep1 = () => {
           )}
 
           {step === 3 && (
-            <div className="space-y-6">
+  <div className="space-y-6">
 
-              {/* OPTIONS */}
-              <div className="flex gap-6 border-b pb-4 text-sm font-medium">
+    {/* OPTIONS */}
+    <div className="flex gap-6 border-b pb-4 text-sm font-medium">
 
-                {/* CURRENT */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                 <input
-  type="radio"
-  checked={resumeMode === "current"}
-  onChange={() => {
-    resetUploadState();
-    setResumeMode("current");
+      {/* CURRENT */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="radio"
+          checked={resumeMode === "current"}
+          onChange={async () => {
+            resetUploadState();
+            setResumeMode("current");
 
-    const previewLink =
-      item.resumePreviewUrl ||
-      (item.resumeId?._id ? `/api/resume/view/${item.resumeId._id}` : "");
+            const raw = item?.raw || item;
 
-    setPreviewUrl(previewLink);
-    setField("resumeUrl", previewLink);
-  }}
-/>
-                  Use Current
-                </label>
+            const previewLink =
+              raw.resumePreviewUrl ||
+              (raw.resumeId?._id
+                ? `/api/resume/view/${raw.resumeId._id}`
+                : "") ||
+              raw.resumeUrl ||
+              raw.downloadUrl ||
+              "";
 
-                {/* EXISTING */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={resumeMode === "existing"}
-                  onChange={() => {
-  resetUploadState();
-  setResumeMode("existing");
-}}
-                  />
-                  Existing
-                </label>
+            setField("resumeUrl", previewLink);
+            setField("resumeTitle", raw.resumeName || "");
 
-                {/* UPLOAD */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={resumeMode === "upload"}
-                  onChange={() => {
-  resetUploadState();
-  setResumeMode("upload");
-}}
-                  />
-                  Upload New
-                </label>
-              </div>
+            // ✅ FIX: ALWAYS GET SIGNED URL
+            const signed = await getPreviewSrc(previewLink);
+            setPreviewUrl(signed);
+          }}
+        />
+        Use Current
+      </label>
 
-              {/* EXISTING RESUME DROPDOWN */}
-              {resumeMode === "existing" && (
-                <div>
-                  <select
-                    className="w-full p-3 border rounded-lg"
-                    onChange={(e) => {
-                      const selected = existingResumes.find(
-                        r => String(r._id) === e.target.value
-                      );
+      {/* EXISTING */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="radio"
+          checked={resumeMode === "existing"}
+          onChange={() => {
+            resetUploadState();
+            setResumeMode("existing");
+          }}
+        />
+        Existing
+      </label>
 
-                      if (!selected) return;
+      {/* UPLOAD */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="radio"
+          checked={resumeMode === "upload"}
+          onChange={() => {
+            resetUploadState();
+            setResumeMode("upload");
+          }}
+        />
+        Upload New
+      </label>
+    </div>
 
-                      setField("resumeUrl", selected.downloadUrl || selected.previewUrl);
-                      setPreviewUrl(selected.previewUrl);
-                      setField("resumeTitle", selected.title);
+    {/* EXISTING RESUME */}
+    {resumeMode === "existing" && (
+      <div>
+        <select
+          className="w-full p-3 border rounded-lg"
+          onChange={async (e) => {
+            const selected = existingResumes.find(
+              r => String(r._id) === e.target.value
+            );
 
-                      setPreviewUrl(
-                        selected.previewUrl || selected.resumeUrl
-                      );
-                    }}
-                  >
-                    <option value="">Select Resume</option>
-                    {existingResumes.map(r => (
-                      <option key={r._id} value={r._id}>
-                        {r.title}
-                      </option>
-                    ))}
-                  </select>
+            if (!selected) return;
 
-                  {!previewUrl && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Select a resume to preview
-                    </p>
-                  )}
-                </div>
-              )}
+            const previewLink =
+              selected.previewUrl ||
+              selected.resumeUrl ||
+              selected.downloadUrl;
 
-              {/* UPLOAD */}
-              {resumeMode === "upload" && (
-                <div className="space-y-3">
+            setField("resumeUrl", previewLink);
+            setField("resumeTitle", selected.title);
 
-                  {/* Resume Title */}
-                  <label className="block text-sm font-medium">
-                    Resume Title <span className="text-red-500">*</span>
-                  </label>
+            // ✅ FIX: SIGNED URL
+            const signed = await getPreviewSrc(previewLink);
+            setPreviewUrl(signed);
+          }}
+        >
+          <option value="">Select Resume</option>
+          {existingResumes.map(r => (
+            <option key={r._id} value={r._id}>
+              {r.title}
+            </option>
+          ))}
+        </select>
 
-                  <input
-                    type="text"
-                    placeholder="Resume Title"
-                    value={form.resumeTitle || ""}
-                    onChange={(e) => setField("resumeTitle", e.target.value)}
-                    className="w-full p-3 border rounded-lg"
-                  />
-
-                  {/* Resume File */}
-                  <ResumeUploader
-                    allowExisting={false}
-                    onSelect={({ file }) => {
-                      setField("resumeFile", file);
-                    }}
-                  />
-
-                {resumeMode === "upload" && !uploadComplete && (
-  <button
-    disabled={
-      !form.resumeTitle?.trim() ||
-      !form.resumeFile ||
-      isUploading
-    }
-    onClick={async () => {
-      try {
-        setIsUploading(true);
-        showToast("Uploading resume...", "info");
-
-        const res = await uploadToGCS(
-          form.resumeFile,
-          form.resumeTitle
-        );
-
-        if (!res?.resume) throw new Error();
-
-        const uploaded = res.resume;
-
-        setField("resumeUrl", uploaded.downloadUrl);
-        setField("resumeTitle", uploaded.title);
-
-        // ⭐ IMPORTANT
-        setPreviewUrl(uploaded.previewUrl);
-
-        setUploadComplete(true);
-
-      } catch {
-        showToast("Upload failed", "error");
-      } finally {
-        setIsUploading(false);
-      }
-    }}
-    className={`px-4 py-2 rounded-lg text-white ${
-      !form.resumeTitle?.trim() ||
-      !form.resumeFile ||
-      isUploading
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-indigo-600"
-    }`}
-  >
-    {isUploading ? "Uploading..." : "Upload Resume"}
-  </button>
-)}
-
-                </div>
-              )}
-
-            {previewUrl && (
-  <div className="space-y-3">
-    <p className="text-sm font-medium">Preview</p>
-
-    <iframe
-      key={previewUrl}
-      src={`${previewUrl}#toolbar=0`}
-      className="w-full h-[420px] border rounded-lg bg-gray-50"
-      title="resume-preview"
-    />
-
-    {/* allow replace ONLY when uploaded */}
-    {resumeMode === "upload" && uploadComplete && (
-      <button
-        onClick={() => {
-          setUploadComplete(false);
-          setField("resumeFile", null);
-          setField("resumeTitle", "");
-          setPreviewUrl("");
-        }}
-        className="text-sm text-indigo-600 underline hover:text-indigo-800"
-      >
-        Upload another resume
-      </button>
+        {!previewUrl && (
+          <p className="text-xs text-gray-500 mt-2">
+            Select a resume to preview
+          </p>
+        )}
+      </div>
     )}
+
+    {/* UPLOAD */}
+    {resumeMode === "upload" && (
+      <div className="space-y-3">
+
+        <label className="block text-sm font-medium">
+          Resume Title <span className="text-red-500">*</span>
+        </label>
+
+        <input
+          type="text"
+          placeholder="Resume Title"
+          value={form.resumeTitle || ""}
+          onChange={(e) => setField("resumeTitle", e.target.value)}
+          className="w-full p-3 border rounded-lg"
+        />
+
+        <ResumeUploader
+          allowExisting={false}
+          onSelect={({ file }) => {
+            setField("resumeFile", file);
+          }}
+        />
+
+        {!uploadComplete && (
+          <button
+            disabled={
+              !form.resumeTitle?.trim() ||
+              !form.resumeFile ||
+              isUploading
+            }
+            onClick={async () => {
+              try {
+                setIsUploading(true);
+                showToast("Uploading resume...", "info");
+
+                const res = await uploadToGCS(
+                  form.resumeFile,
+                  form.resumeTitle
+                );
+
+                const uploaded = res.resume;
+
+                setField("resumeUrl", uploaded.downloadUrl);
+                setField("resumeTitle", uploaded.title);
+
+                // ✅ FIX: SIGNED URL
+                const signed = await getPreviewSrc(uploaded.previewUrl);
+                setPreviewUrl(signed);
+
+                setUploadComplete(true);
+
+              } catch {
+                showToast("Upload failed", "error");
+              } finally {
+                setIsUploading(false);
+              }
+            }}
+            className={`px-4 py-2 rounded-lg text-white ${
+              !form.resumeTitle?.trim() ||
+              !form.resumeFile ||
+              isUploading
+                ? "bg-gray-400"
+                : "bg-indigo-600"
+            }`}
+          >
+            {isUploading ? "Uploading..." : "Upload Resume"}
+          </button>
+        )}
+      </div>
+    )}
+
+    {/* PREVIEW */}
+    {previewUrl && (
+      <div className="space-y-3">
+        <p className="text-sm font-medium">Preview</p>
+
+        <iframe
+          key={previewUrl}
+          src={previewUrl}
+          className="w-full h-[420px] border rounded-lg bg-gray-50"
+          title="resume-preview"
+        />
+
+        {resumeMode === "upload" && uploadComplete && (
+          <button
+            onClick={() => {
+              setUploadComplete(false);
+              setField("resumeFile", null);
+              setField("resumeTitle", "");
+              setPreviewUrl("");
+            }}
+            className="text-sm text-indigo-600 underline"
+          >
+            Upload another resume
+          </button>
+        )}
+      </div>
+    )}
+
   </div>
 )}
-            </div>
-          )}
           {step === 4 && (
             <div className="space-y-4">
 

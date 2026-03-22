@@ -250,11 +250,26 @@ export default function Resume() {
 
   };
 
-  const handleDownload = (row) => {
+const handleDownload = async (row) => {
+  try {
+    const res = await fetch(row.downloadUrl, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
 
-    window.location.href = row.downloadUrl;
+    const data = await res.json();
 
-  };
+    if (data?.url) {
+      window.open(data.url, "_blank"); // ✅ actual file download
+    } else {
+      console.error("No download URL received");
+    }
+
+  } catch (err) {
+    console.error("Download failed:", err);
+  }
+};
 
 if (loading) {
   return (

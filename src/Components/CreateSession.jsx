@@ -12,6 +12,7 @@ import TeamsLogo from "../assets/Teams.png";
 import WhatsappLogo from "../assets/Whatsapp.png";
 import ResumeProcessingLoader from "./ResumeProcessingLoader";
 import { getUserCredits } from "../Services/userService"; // add at top
+import { getPreviewSrc } from "../utils/getPreviewSrc";
 
 export default function CreateSession({ open, onClose, onCreated }) {
   const [step, setStep] = useState(1);
@@ -28,6 +29,22 @@ export default function CreateSession({ open, onClose, onCreated }) {
   const [selectedMethod, setSelectedMethod] = useState("");
 
 const [meetingLink, setMeetingLink] = useState("");
+
+useEffect(() => {
+  const loadPreview = async () => {
+    if (!previewUrl) return;
+
+    try {
+      const signed = await getPreviewSrc(previewUrl);
+      setPreviewUrl(signed);
+    } catch (err) {
+      console.error("Preview failed", err);
+      setPreviewUrl("");
+    }
+  };
+
+  loadPreview();
+}, []);
 
 const resetUploadState = () => {
   setPreviewUrl("");
@@ -176,6 +193,19 @@ onCreated?.(session);
   }
 
   if (!open) return null;
+
+
+  const isResumeStepValid = () => {
+  if (resumeMode === "existing") {
+    return !!form.resumeId; // must select resume
+  }
+
+  if (resumeMode === "upload") {
+    return uploadComplete; // must finish upload
+  }
+
+  return false;
+};
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
@@ -426,22 +456,28 @@ onCreated?.(session);
         <div className="relative">
           <select
             value={form.resumeId || ""}
-            onChange={(e) => {
+           onChange={async (e) => {
 
-              const selected = existingResumes.find(
-                r => r._id === e.target.value
-              )
+  const selected = existingResumes.find(
+    r => r._id === e.target.value
+  )
 
-              if (!selected) return
+  if (!selected) return
 
-              setField("resumeId", selected._id)
-              setField("resumeUrl", selected.downloadUrl)
-              setField("resumeTitle", selected.title)
+  const previewLink =
+    selected.previewUrl ||
+    selected.resumeUrl ||
+    selected.downloadUrl;
 
-              setPreviewUrl(
-                selected.previewUrl || selected.downloadUrl
-              )
-            }}
+  setField("resumeId", selected._id)
+  setField("resumeUrl", selected.downloadUrl)
+  setField("resumeTitle", selected.title)
+
+  // ✅ NOW THIS WORKS
+  const signed = await getPreviewSrc(previewLink);
+  setPreviewUrl(signed);
+
+}}
             className="w-full appearance-none p-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
           >
 
@@ -526,7 +562,8 @@ onCreated?.(session);
                 setField("resumeUrl", uploaded.downloadUrl)
                 setField("resumeId", uploaded._id)
 
-                setPreviewUrl(uploaded.previewUrl)
+                const signed = await getPreviewSrc(uploaded.previewUrl);
+setPreviewUrl(signed);
 
                 setUploadComplete(true)
 
@@ -823,16 +860,22 @@ onCreated?.(session);
             </button>
           )}
 
-          {/* STEP 2–4 */}
-          {step > 1 && step < 5 && (
-            <button
-              onClick={next}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg text-white theme-primary transition"
-            >
-              Next <ArrowRight size={16} />
-            </button>
-          )}
-
+         {step > 1 && step < 5 && (
+  <button
+    onClick={() => {
+      if (step === 3 && !isResumeStepValid()) return;
+      next();
+    }}
+    disabled={step === 3 && !isResumeStepValid()}
+    className={`flex items-center gap-2 px-5 py-2 rounded-lg text-white transition
+      ${step === 3 && !isResumeStepValid()
+        ? "bg-gray-400 cursor-not-allowed"
+        : "theme-primary"
+      }`}
+  >
+    Next <ArrowRight size={16} />
+  </button>
+)}
           {/* STEP 5 → CREATE SESSION */}
           {step === 5 && (
             <button

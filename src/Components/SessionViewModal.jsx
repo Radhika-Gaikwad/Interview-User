@@ -14,9 +14,23 @@ import {
   FaMicrophone,
 } from "react-icons/fa";
 import { X } from "lucide-react";
+import { getPreviewSrc } from "../utils/getPreviewSrc";
 
 export default function SessionViewModal({ open, item, onClose }) {
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  const [previewSrc, setPreviewSrc] = useState("");
+
+useEffect(() => {
+  const loadPreview = async () => {
+    if (!item?.resumePreviewUrl) return;
+
+    const url = await getPreviewSrc(item.resumePreviewUrl);
+    setPreviewSrc(url);
+  };
+
+  loadPreview();
+}, [item]);
 
   useEffect(() => {
     if (open) {
@@ -28,6 +42,24 @@ export default function SessionViewModal({ open, item, onClose }) {
 
   if (!open || !item) return null;
 
+
+  const handleDownload = async () => {
+  try {
+    const res = await fetch(item.resumeDownloadUrl, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (data?.url) {
+      window.open(data.url, "_blank");
+    }
+  } catch (err) {
+    console.error("Download failed:", err);
+  }
+};
   const statusColors = {
     active: "bg-green-100 text-green-700",
     completed: "bg-red-100 text-red-700",
@@ -120,24 +152,21 @@ export default function SessionViewModal({ open, item, onClose }) {
                   {previewOpen ? "Hide Preview" : "Preview Resume"}
                 </button>
 
-                <a
-                  href={item.resumeDownloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl shadow"
-                >
-                  <FaDownload />
-                  Download Resume
-                </a>
+               <button
+  onClick={handleDownload}
+  className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl shadow"
+>
+  <FaDownload />
+  Download Resume
+</button>
               </div>
 
-              {previewOpen && (
-                <iframe
-                  src={item.resumePreviewUrl}
-                  title="Resume Preview"
-                  className="w-full h-[520px] rounded-xl border"
-                />
-              )}
+             {previewOpen && previewSrc && (
+  <iframe
+    src={previewSrc}
+    className="w-full h-[520px] rounded-xl border"
+  />
+)}
             </GlassSection>
           )}
 
