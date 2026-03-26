@@ -9,7 +9,7 @@ import {
 
 import AILoader from "../../Components/AILoader";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 5;
 
 function formatDate(dateStr) {
   try {
@@ -250,42 +250,41 @@ export default function Resume() {
 
   };
 
-const handleDownload = async (row) => {
-  try {
-    const res = await fetch(row.downloadUrl, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+  const handleDownload = async (row) => {
+    try {
+      const res = await fetch(row.downloadUrl, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data?.url) {
-      window.open(data.url, "_blank"); // ✅ actual file download
-    } else {
-      console.error("No download URL received");
+      if (data?.url) {
+        window.open(data.url, "_blank"); // ✅ actual file download
+      } else {
+        console.error("No download URL received");
+      }
+
+    } catch (err) {
+      console.error("Download failed:", err);
     }
+  };
 
-  } catch (err) {
-    console.error("Download failed:", err);
+  if (loading) {
+    return (
+      <div className="relative w-full h-full min-h-[60vh]">
+        <AILoader text="Loading Resumes..." />
+      </div>
+    );
   }
-};
-
-if (loading) {
-  return (
-    <div className="relative w-full h-full min-h-[60vh]">
-      <AILoader text="Loading Resumes..." />
-    </div>
-  );
-}
 
   return (
     <div className="relative">
 
       <div
-        className={`p-2 md:p-4 lg:px-6 lg:h-[500px] transition-opacity duration-300 ${
-          loading ? "opacity-0 pointer-events-none" : "opacity-100"
-        }`}
+        className={`p-2 md:p-4 lg:px-6 lg:h-[500px] transition-opacity duration-300 ${loading ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
       >
 
         <div className="mb-4 space-y-1">
@@ -375,9 +374,8 @@ if (loading) {
                   return (
                     <div
                       key={row.id}
-                      className={`grid grid-cols-[50px_80px_1fr_180px_120px] px-4 py-3 border-b last:border-b-0 text-sm items-center transition ${
-                        isChecked ? "hover-faint-gradient" : ""
-                      }`}
+                      className={`grid grid-cols-[50px_80px_1fr_180px_120px] px-4 py-3 border-b last:border-b-0 text-sm items-center transition ${isChecked ? "hover-faint-gradient" : ""
+                        }`}
                     >
                       <div>
                         <input
@@ -435,11 +433,10 @@ if (loading) {
                   return (
                     <div
                       key={row.id}
-                      className={`p-4 rounded-xl border shadow-sm flex justify-between items-center ${
-                        isChecked
-                          ? "hover-faint-gradient"
-                          : "bg-white/70"
-                      }`}
+                      className={`p-4 rounded-xl border shadow-sm flex justify-between items-center ${isChecked
+                        ? "hover-faint-gradient"
+                        : "bg-white/70"
+                        }`}
                     >
                       <div className="flex items-center gap-3">
 
@@ -505,9 +502,8 @@ if (loading) {
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className={`px-3 py-1 rounded-md glass ${
-                  page === 1 ? "opacity-50" : "hover:scale-105"
-                }`}
+                className={`px-3 py-1 rounded-md glass ${page === 1 ? "opacity-50" : "hover:scale-105"
+                  }`}
               >
                 Prev
               </button>
@@ -520,9 +516,8 @@ if (loading) {
                   <button
                     key={num}
                     onClick={() => setPage(num)}
-                    className={`px-3 py-1 rounded-md ${
-                      num === page ? "theme-primary" : "glass"
-                    }`}
+                    className={`px-3 py-1 rounded-md ${num === page ? "theme-primary" : "glass"
+                      }`}
                   >
                     {num}
                   </button>
@@ -532,11 +527,10 @@ if (loading) {
               <button
                 disabled={page === totalPages}
                 onClick={() => setPage(page + 1)}
-                className={`px-3 py-1 rounded-md glass ${
-                  page === totalPages
-                    ? "opacity-50"
-                    : "hover:scale-105"
-                }`}
+                className={`px-3 py-1 rounded-md glass ${page === totalPages
+                  ? "opacity-50"
+                  : "hover:scale-105"
+                  }`}
               >
                 Next
               </button>

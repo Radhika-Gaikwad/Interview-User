@@ -20,6 +20,7 @@ export default function SessionViewModal({ open, item, onClose }) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const [previewSrc, setPreviewSrc] = useState("");
+const [step, setStep] = useState(1); // ✅ NEW step state
 
 useEffect(() => {
   const loadPreview = async () => {
@@ -65,6 +66,9 @@ useEffect(() => {
     completed: "bg-red-100 text-red-700",
     draft: "bg-gray-100 text-gray-700",
   };
+
+
+  
 
   return (
     <div className="fixed inset-0 z-[999999] flex items-center justify-center animate-fadeIn">
@@ -140,8 +144,7 @@ useEffect(() => {
             </GlassSection>
           )}
 
-          {/* Resume Section */}
-          {item.resumePreviewUrl && (
+       {(item.resumePreviewUrl || item.resumeDownloadUrl) && (
             <GlassSection title="Resume">
               <div className="flex flex-wrap gap-3 mb-4">
                 <button
@@ -195,7 +198,10 @@ useEffect(() => {
         {/* FOOTER */}
         <div className="p-4 border-t border-white/40 flex justify-end bg-gray-50 backdrop-blur-md">
           <button
-            onClick={onClose}
+           onClick={() => {
+  setStep(1);        // ✅ reset BEFORE closing
+  onClose();
+}}
             className="px-5 py-2 rounded-xl theme-secondary shadow-md hover:brightness-110 hover:scale-105 transition-all duration-200"
           >
             Close

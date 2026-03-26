@@ -3,25 +3,24 @@ import Toast from "./showToast";
 import { setToastHandler } from "../utils/showToastService"; // ✅ FIX
 
 const ToastContainer = () => {
-  const [toasts, setToasts] = useState([]);
+ const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    // ✅ Register handler (NOT showToast)
-    setToastHandler((type, message) => {
-      const id = Date.now();
-      setToasts((prev) => [...prev, { id, type, message }]);
+useEffect(() => {
+  setToastHandler((type, message) => {
+    setToast({
+      id: Date.now(),
+      type,
+      message,
     });
-  }, []);
+  });
+}, []);
 
-  const removeToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
+const removeToast = () => {
+  setToast(null);
+};
   return (
     <div className="fixed top-5 right-5 space-y-3 z-50">
-      {toasts.map((toast) => (
-        <Toast key={toast.id} {...toast} onClose={removeToast} />
-      ))}
+      {toast && <Toast key={toast.id} {...toast} onClose={removeToast} />}
     </div>
   );
 };

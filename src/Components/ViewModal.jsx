@@ -379,7 +379,7 @@ export default function ViewModal({ open, item, onClose }) {
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-5 py-2 rounded-xl theme-primary shadow-lg hover:brightness-110 transition"
           >
-            <Download size={18} /> Resume
+            <Download size={18} /> Download
           </button>
 
           <button

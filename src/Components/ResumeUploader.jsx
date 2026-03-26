@@ -13,31 +13,9 @@ export default function ResumeUploader({
 
   const [selectedResume, setSelectedResume] = useState(null);
   const [file, setFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+ const [preview, setPreview] = useState(null);
   const [mode, setMode] = useState(allowExisting ? "existing" : "upload");
 const [dragActive, setDragActive] = useState(false);
-  /* -------------------------------- */
-  /* Preview for newly uploaded file  */
-  /* -------------------------------- */
-useEffect(() => {
-  if (!file) {
-    setPreviewUrl("");
-    return;
-  }
-
-  const fileType = file.type;
-
-  // Only allow PDF preview
-  if (fileType === "application/pdf") {
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-
-    return () => URL.revokeObjectURL(url);
-  } else {
-    // DOC/DOCX cannot preview in browser
-    setPreviewUrl("doc-file");
-  }
-}, [file]);
 
 const handleFile = async (f) => {
   setFile(f);
@@ -45,21 +23,34 @@ const handleFile = async (f) => {
   onSelect?.({ file: f, existing: null });
 
   if (f.type === "application/pdf") {
-    setPreviewUrl(URL.createObjectURL(f));
-  } else if (f.type ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || 
-             f.type === "application/msword") {
-    // Try to extract text with mammoth
-    const arrayBuffer = await f.arrayBuffer();
-    const { value: text } = await mammoth.extractRawText({ arrayBuffer });
-    setPreviewUrl({ docText: text });
+    const url = URL.createObjectURL(f);
+    setPreview({ type: "pdf", url });
+  } 
+  else if (
+    f.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    f.type === "application/msword"
+  ) {
+    // OPTIONAL: extract text
+    try {
+      const arrayBuffer = await f.arrayBuffer();
+      const { value: text } = await mammoth.extractRawText({ arrayBuffer });
+
+      setPreview({
+        type: "doc",
+        text, // optional if you want to show text later
+      });
+    } catch {
+      setPreview({ type: "doc" });
+    }
+  } else {
+    setPreview(null);
   }
 };
 
   const selectExisting = (resume) => {
     setSelectedResume(resume);
     setFile(null);
-    setPreviewUrl("");
+    setPreview("");
 
     onSelect?.({ file: null, existing: resume });
   };
@@ -172,32 +163,46 @@ const handleFile = async (f) => {
     />
   </div>
 )}
-{previewUrl || selectedResume?.previewUrl ? (
+{(preview || selectedResume?.previewUrl) && (
   <div className="border rounded-xl overflow-hidden shadow-sm">
     <div className="bg-gray-50 px-3 py-2 text-xs text-gray-600">
       Preview
     </div>
 
-    <div className="w-full overflow-hidden rounded-b-xl p-6 text-center max-h-[65vh] overflow-auto">
-      {previewUrl === "doc-file" ? (
+    <div className="w-full p-6 text-center overflow-auto">
+      
+      {/* DOC/DOCX */}
+      {preview?.type === "doc" && (
         <>
           <p className="font-medium text-gray-700">
-            DOC/DOCX cannot be previewed directly in browser.
+            DOC/DOCX preview is not supported in browser.
           </p>
           <p className="text-sm mt-1 text-gray-500">
-            Preview will be available after upload as PDF.
+            Please upload PDF for preview.
           </p>
         </>
-      ) : (
+      )}
+
+      {/* PDF */}
+      {preview?.type === "pdf" && (
         <iframe
           title="resume-preview"
-          src={previewUrl || selectedResume?.previewUrl}
+          src={preview.url}
+          className="w-full h-[65vh] border-0"
+        />
+      )}
+
+      {/* EXISTING RESUME */}
+      {!preview && selectedResume?.previewUrl && (
+        <iframe
+          title="resume-preview"
+          src={selectedResume.previewUrl}
           className="w-full h-[65vh] border-0"
         />
       )}
     </div>
   </div>
-) : null}
+)}
     </div>
   );
 }

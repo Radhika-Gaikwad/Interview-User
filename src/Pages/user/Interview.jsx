@@ -9,7 +9,7 @@ import AILoader from "../../Components/AILoader";
 import { getProfile } from "../../Services/userService";
 
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 5;
 
 function formatDate(d) {
   try {
@@ -607,7 +607,9 @@ window.dispatchEvent(new Event("session-updated"));
         <SessionEditModal
           open={!!editItem}
           item={editItem}
-          onClose={() => setEditItem(null)}
+          onClose={() => {
+  setEditItem(null);
+}}
           onSave={async (payload) => {
             try {
               const res = await sessionService.updateSession(
@@ -638,7 +640,9 @@ window.dispatchEvent(new Event("session-updated"));
             }
           }}
         />
-        <SessionViewModal open={!!viewItem} item={viewItem} onClose={() => setViewItem(null)} />
+        <SessionViewModal 
+          key={viewItem?._id || viewItem?.id} 
+        open={!!viewItem} item={viewItem} onClose={() => setViewItem(null)} />
 
 
         <ConnectModal

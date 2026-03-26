@@ -11,7 +11,8 @@ import MeetLogo from "../assets/GoogleMeet.png";
 import TeamsLogo from "../assets/Teams.png";
 import WhatsappLogo from "../assets/Whatsapp.png";
 import ResumeProcessingLoader from "./ResumeProcessingLoader";
-import { getUserCredits } from "../Services/userService"; // add at top
+import { getUserCredits } from "../Services/userService"; 
+import { showToast } from "../utils/showToastService";
 import { getPreviewSrc } from "../utils/getPreviewSrc";
 
 export default function CreateSession({ open, onClose, onCreated }) {
@@ -177,7 +178,7 @@ const prev = () => {
       setCreating(true);
       const session = await sessionService.createSession(payload);
 
-      showToast("Session created successfully 🎉");
+    showToast("Session created successfully 🎉", "success");
 
       setTimeout(() => {
 setForm(prev => ({ ...prev, _id: session._id }));
@@ -322,20 +323,17 @@ onCreated?.(session);
 
               <div className="flex flex-col gap-5">
 
-                {/* Language */}
-                <div>
-                  <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                    🌐 Language
-                  </label>
-                  <select
-                    value={form.language}
-                    onChange={e => setField("language", e.target.value)}
-                    className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:outline-none"
-                  >
-                    <option>English</option>
-               
-                  </select>
-                </div>
+               {/* Language */}
+
+<div>
+  <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
+    🌐 Language
+  </label>
+
+  <div className="w-full h-10 px-3 flex items-center text-sm rounded-md border border-indigo-300 bg-indigo-50 text-indigo-700 font-medium">
+    English
+  </div>
+</div>
 
                 {/* Simple English Toggle */}
                 <div className="flex items-center justify-between bg-gray-50 border rounded-lg p-3">
@@ -445,69 +443,68 @@ onCreated?.(session);
       </label>
     </div>
 
-    {/* EXISTING RESUME DROPDOWN */}
-    {resumeMode === "existing" && (
-      <div className="space-y-3">
+  {/* EXISTING RESUME DROPDOWN */} 
+{resumeMode === "existing" && (
+  <div className="space-y-3">
 
-        <label className="text-sm font-medium">
+    <label className="text-sm font-medium">
+      Select Resume
+    </label>
+
+    <div className="relative">
+      <select
+        value={form.resumeId || ""}
+        onChange={async (e) => {
+
+          const selected = existingResumes.find(
+            r => r._id === e.target.value
+          )
+
+          if (!selected) return
+
+          const previewLink =
+            selected.previewUrl ||
+            selected.resumeUrl ||
+            selected.downloadUrl;
+
+          setField("resumeId", selected._id)
+          setField("resumeUrl", selected.downloadUrl)
+          setField("resumeTitle", selected.title)
+
+          const signed = await getPreviewSrc(previewLink);
+          setPreviewUrl(signed);
+
+        }}
+        className="w-full appearance-none p-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+      >
+
+        {/* ✅ Placeholder (not selectable) */}
+        <option value="" disabled hidden>
           Select Resume
-        </label>
+        </option>
 
-        <div className="relative">
-          <select
-            value={form.resumeId || ""}
-           onChange={async (e) => {
+        {existingResumes.map(r => (
+          <option key={r._id} value={r._id}>
+            {r.title}
+          </option>
+        ))}
 
-  const selected = existingResumes.find(
-    r => r._id === e.target.value
-  )
+      </select>
 
-  if (!selected) return
-
-  const previewLink =
-    selected.previewUrl ||
-    selected.resumeUrl ||
-    selected.downloadUrl;
-
-  setField("resumeId", selected._id)
-  setField("resumeUrl", selected.downloadUrl)
-  setField("resumeTitle", selected.title)
-
-  // ✅ NOW THIS WORKS
-  const signed = await getPreviewSrc(previewLink);
-  setPreviewUrl(signed);
-
-}}
-            className="w-full appearance-none p-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          >
-
-            <option value="">
-              Select Resume
-            </option>
-
-            {existingResumes.map(r => (
-              <option key={r._id} value={r._id}>
-                {r.title}
-              </option>
-            ))}
-
-          </select>
-
-          {/* custom arrow */}
-          <div className="absolute right-3 top-3 text-gray-400 pointer-events-none">
-            ▼
-          </div>
-        </div>
-
-        {!previewUrl && (
-          <p className="text-xs text-gray-500">
-            Select a resume to preview
-          </p>
-        )}
-
+      {/* custom arrow */}
+      <div className="absolute right-3 top-3 text-gray-400 pointer-events-none">
+        ▼
       </div>
+    </div>
+
+    {!previewUrl && (
+      <p className="text-xs text-gray-500">
+        Select a resume to preview
+      </p>
     )}
 
+  </div>
+)}
     {/* UPLOAD SECTION */}
     {resumeMode === "upload" && (
       <div className="space-y-4">
@@ -967,18 +964,7 @@ setPreviewUrl(signed);
   processing={isUploading}
   successMessage="Resume Uploaded Successfully!"
 />
-      {/* TOASTS */}
-      <div className="fixed top-6 right-6 space-y-2">
-        {toasts.map(t => (
-          <Toast
-            key={t.id}
-            {...t}
-            onClose={() =>
-              setToasts(prev => prev.filter(x => x.id !== t.id))
-            }
-          />
-        ))}
-      </div>
+    
     </div>
   );
 }
