@@ -6,37 +6,52 @@ import {
   getResumesService,
   deleteResumeService,
 } from "../../Services/resume.service";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import AILoader from "../../Components/AILoader";
 
 const PAGE_SIZE = 5;
 
-function formatDate(dateStr) {
+// Safely Handle Firebase Timestamp objects or standard strings
+function formatDate(dateObj) {
+  if (!dateObj) return "N/A";
   try {
-    const d = new Date(dateStr);
+    let d;
+    if (typeof dateObj === 'object' && dateObj._seconds) {
+      d = new Date(dateObj._seconds * 1000);
+    } else {
+      d = new Date(dateObj);
+    }
     return d.toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
   } catch {
-    return dateStr;
+    return "Invalid Date";
   }
 }
 
-export default function Resume() {
+// Helper for sorting logic
+function getTimestampMs(dateObj) {
+  if (!dateObj) return 0;
+  if (typeof dateObj === 'object' && dateObj._seconds) {
+    return dateObj._seconds * 1000;
+  }
+  return new Date(dateObj).getTime() || 0;
+}
 
-  const [query, setQuery] = useState("");
+export default function Resume() {
+  const queryClient = useQueryClient();
+
+  // 🔥 OPTIMIZATION 1: Separate visual input from processing query
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
   const [sortOrder, setSortOrder] = useState("newest");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState({});
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
 
   const [viewItem, setViewItem] = useState(null);
 
@@ -44,41 +59,39 @@ export default function Resume() {
     open: false,
     title: "",
     message: "",
-    onConfirm: null
+    onConfirm: null,
   });
 
+  // 🔥 OPTIMIZATION 2: Throttle the window resize listener to prevent render thrashing
   useEffect(() => {
-    const onResize = () => setWindowWidth(window.innerWidth);
+    let timeoutId;
+    const onResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => setWindowWidth(window.innerWidth), 150);
+    };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
-  const isMobile = windowWidth < 768;
-
+  // 🔥 OPTIMIZATION 3: Debounce the search input to prevent heavy array filtering on every keystroke
   useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchInput);
+    }, 300); // Waits 300ms after user stops typing
 
-    fetchResumes();
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
-    const handleResumeUpdate = () => {
-      fetchResumes();
-    };
-
-    window.addEventListener("resume-updated", handleResumeUpdate);
-
-    return () => {
-      window.removeEventListener("resume-updated", handleResumeUpdate);
-    };
-
-  }, [page]);
-
-  const fetchResumes = async () => {
-
-    try {
-
-      setLoading(true);
-
-      const res = await getResumesService(page, PAGE_SIZE);
-
+  // 🔥 OPTIMIZATION 4: Add staleTime and keepPreviousData to React Query
+  const resumesQuery = useQuery({
+    queryKey: ["resumes", page],
+    queryFn: () => getResumesService(page, PAGE_SIZE),
+    keepPreviousData: true, // Prevents loading spinner flickering during pagination
+    staleTime: 5 * 60 * 1000, // Caches data for 5 minutes to prevent rapid re-fetching
+    select: (res) => {
       const formatted = res.data.data.map((r) => ({
         id: r._id,
         title: r.title,
@@ -90,164 +103,128 @@ export default function Resume() {
         jsonUrl: r.jsonUrl,
         parsedData: r.parsedData,
       }));
+      return {
+        data: formatted,
+        totalPages: res.data.totalPages || 1,
+        total: res.data.total || formatted.length,
+      };
+    },
+  });
 
-      setData(formatted);
+  const deleteMutation = useMutation({
+    mutationFn: deleteResumeService,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["resumes", page]);
+      setConfirmConfig((c) => ({ ...c, open: false }));
+    },
+    onError: (err) => {
+      console.error("Delete error:", err);
+      setConfirmConfig((c) => ({ ...c, open: false }));
+    },
+  });
 
-      setTotalPages(res.data.totalPages || 1);
-      setTotalItems(res.data.total || formatted.length);
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids) => Promise.all(ids.map((id) => deleteResumeService(id))),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["resumes", page]);
+      setSelected({});
+      setConfirmConfig((c) => ({ ...c, open: false }));
+    },
+    onError: (err) => {
+      console.error("Bulk delete error:", err);
+      setConfirmConfig((c) => ({ ...c, open: false }));
+    },
+  });
 
-    } catch (err) {
+  const isMobile = windowWidth < 768;
 
-      console.error("Fetch resumes error:", err);
+  useEffect(() => {
+    const handleResumeUpdate = () => {
+      queryClient.invalidateQueries(["resumes", page]);
+    };
 
-    } finally {
+    window.addEventListener("resume-updated", handleResumeUpdate);
 
-      setLoading(false);
+    return () => {
+      window.removeEventListener("resume-updated", handleResumeUpdate);
+    };
+  }, [page, queryClient]);
 
-    }
-
-  };
-
+  // Filters using the debounced query instead of the raw input
   const filtered = useMemo(() => {
+    const q = debouncedQuery.trim().toLowerCase();
 
-    const q = query.trim().toLowerCase();
-
-    let list = data.filter((r) =>
+    let list = (resumesQuery.data?.data || []).filter((r) =>
       q ? r.title.toLowerCase().includes(q) : true
     );
 
     list.sort((a, b) => {
-
-      const ta = new Date(a.createdAt).getTime();
-      const tb = new Date(b.createdAt).getTime();
+      const ta = getTimestampMs(a.createdAt);
+      const tb = getTimestampMs(b.createdAt);
 
       return sortOrder === "newest" ? tb - ta : ta - tb;
-
     });
 
     return list;
-
-  }, [data, query, sortOrder]);
+  }, [resumesQuery.data, debouncedQuery, sortOrder]);
 
   const pageItems = filtered;
 
   const toggleSelect = (id) =>
     setSelected((p) => {
-
       const n = { ...p };
 
       if (n[id]) delete n[id];
       else n[id] = true;
 
       return n;
-
     });
 
   const isAllSelected =
-    pageItems.length > 0 &&
-    pageItems.every((it) => selected[it.id]);
+    pageItems.length > 0 && pageItems.every((it) => selected[it.id]);
 
   const toggleSelectAll = () =>
     setSelected((prev) => {
-
       const next = { ...prev };
 
       if (isAllSelected) {
-
         pageItems.forEach((it) => delete next[it.id]);
-
       } else {
-
         pageItems.forEach((it) => (next[it.id] = true));
-
       }
 
       return next;
-
     });
 
   const openView = (id) => {
-
-    const item = data.find((d) => d.id === id);
-
+    const item = resumesQuery.data?.data.find((d) => d.id === id);
     setViewItem(item);
-
   };
 
   const closeView = () => setViewItem(null);
 
   const requestDelete = (id) => {
-
-    const item = data.find((d) => d.id === id);
+    const item = resumesQuery.data?.data.find((d) => d.id === id);
 
     setConfirmConfig({
       open: true,
       title: "Delete Resume",
-      message: `Are you sure you want to delete "${item?.title || "this resume"}"?`,
-      onConfirm: async () => {
-
-        try {
-
-          await deleteResumeService(id);
-
-          setData((d) => d.filter((r) => r.id !== id));
-
-          setSelected((s) => {
-            const n = { ...s };
-            delete n[id];
-            return n;
-          });
-
-        } catch (err) {
-
-          console.error("Delete error:", err);
-
-        } finally {
-
-          setConfirmConfig((c) => ({ ...c, open: false }));
-
-        }
-
-      },
+      message: `Are you sure you want to delete "${item?.title || "this resume"
+        }"?`,
+      onConfirm: () => deleteMutation.mutate(id),
     });
-
   };
 
   const requestDeleteSelected = () => {
-
     const ids = Object.keys(selected);
-
     if (!ids.length) return;
 
     setConfirmConfig({
       open: true,
       title: "Delete Selected Resumes",
       message: `Delete ${ids.length} selected resume(s)?`,
-      onConfirm: async () => {
-
-        try {
-
-          await Promise.all(
-            ids.map((id) => deleteResumeService(id))
-          );
-
-          setData((d) => d.filter((r) => !selected[r.id]));
-
-          setSelected({});
-
-        } catch (err) {
-
-          console.error("Bulk delete error:", err);
-
-        } finally {
-
-          setConfirmConfig((c) => ({ ...c, open: false }));
-
-        }
-
-      },
+      onConfirm: () => bulkDeleteMutation.mutate(ids),
     });
-
   };
 
   const handleDownload = async (row) => {
@@ -261,17 +238,18 @@ export default function Resume() {
       const data = await res.json();
 
       if (data?.url) {
-        window.open(data.url, "_blank"); // ✅ actual file download
+        window.open(data.url, "_blank");
       } else {
         console.error("No download URL received");
       }
-
     } catch (err) {
       console.error("Download failed:", err);
     }
   };
 
-  if (loading) {
+  // Only show the hard loader on the very first mount. 
+  // Subsequent page changes will use keepPreviousData.
+  if (resumesQuery.isLoading && !resumesQuery.isPreviousData) {
     return (
       <div className="relative w-full h-full min-h-[60vh]">
         <AILoader text="Loading Resumes..." />
@@ -281,36 +259,29 @@ export default function Resume() {
 
   return (
     <div className="relative">
-
       <div
-        className={`p-2 md:p-4 lg:px-6 lg:h-[500px] transition-opacity duration-300 ${loading ? "opacity-0 pointer-events-none" : "opacity-100"
+        className={`p-2 md:p-4 lg:px-6 lg:h-[500px] transition-opacity duration-300 ${resumesQuery.isFetching && !resumesQuery.isPreviousData ? "opacity-50 pointer-events-none" : "opacity-100"
           }`}
       >
-
         <div className="mb-4 space-y-1">
-
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-2">
-
             <div className="flex items-center gap-2 md:w-auto w-full">
-
               <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search resumes..."
                 className="px-4 py-3 rounded-xl glass-card border focus:ring-2 focus:ring-indigo-300 w-full md:w-72 lg:w-96"
               />
 
               <button
-                onClick={() => setQuery("")}
+                onClick={() => setSearchInput("")}
                 className="px-3 py-2 rounded-xl glass hover:scale-105 transition"
               >
                 Clear
               </button>
-
             </div>
 
             <div className="flex items-center gap-2 md:w-auto">
-
               <select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
@@ -319,9 +290,7 @@ export default function Resume() {
                 <option value="newest">Newest</option>
                 <option value="oldest">Oldest</option>
               </select>
-
             </div>
-
           </div>
 
           {Object.keys(selected).length > 0 && (
@@ -338,15 +307,11 @@ export default function Resume() {
               </button>
             </div>
           )}
-
         </div>
 
         <div className="glass-card rounded-xl overflow-hidden">
-
           <div className="overflow-y-auto md:hight-[450px]">
-
             {!isMobile ? (
-
               <>
                 <div className="grid grid-cols-[50px_80px_1fr_180px_120px] bg-white/40 border-b px-4 py-3 text-base font-semibold text-gray-700">
                   <div>
@@ -365,10 +330,7 @@ export default function Resume() {
                 </div>
 
                 {pageItems.map((row, idx) => {
-
-                  const serial =
-                    (page - 1) * PAGE_SIZE + idx + 1;
-
+                  const serial = (page - 1) * PAGE_SIZE + idx + 1;
                   const isChecked = selected[row.id];
 
                   return (
@@ -387,17 +349,10 @@ export default function Resume() {
                       </div>
 
                       <div>{serial}</div>
-
-                      <div className="font-medium">
-                        {row.title}
-                      </div>
-
-                      <div>
-                        {formatDate(row.createdAt)}
-                      </div>
+                      <div className="font-medium">{row.title}</div>
+                      <div>{formatDate(row.createdAt)}</div>
 
                       <div className="flex justify-end gap-2">
-
                         <button
                           onClick={() => openView(row.id)}
                           className="p-2 glass rounded-lg hover:scale-110"
@@ -418,7 +373,6 @@ export default function Resume() {
                         >
                           <Trash2 size={18} />
                         </button>
-
                       </div>
                     </div>
                   );
@@ -427,19 +381,15 @@ export default function Resume() {
             ) : (
               <div className="p-3 space-y-3">
                 {pageItems.map((row) => {
-
                   const isChecked = selected[row.id];
 
                   return (
                     <div
                       key={row.id}
-                      className={`p-4 rounded-xl border shadow-sm flex justify-between items-center ${isChecked
-                        ? "hover-faint-gradient"
-                        : "bg-white/70"
+                      className={`p-4 rounded-xl border shadow-sm flex justify-between items-center ${isChecked ? "hover-faint-gradient" : "bg-white/70"
                         }`}
                     >
                       <div className="flex items-center gap-3">
-
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -448,19 +398,14 @@ export default function Resume() {
                         />
 
                         <div>
-                          <div className="font-semibold">
-                            {row.title}
-                          </div>
-
+                          <div className="font-semibold">{row.title}</div>
                           <div className="text-xs text-gray-600">
                             {formatDate(row.createdAt)}
                           </div>
                         </div>
-
                       </div>
 
                       <div className="flex gap-2">
-
                         <button
                           onClick={() => openView(row.id)}
                           className="p-2 glass rounded-lg"
@@ -481,7 +426,6 @@ export default function Resume() {
                         >
                           <Trash2 size={16} />
                         </button>
-
                       </div>
                     </div>
                   );
@@ -491,14 +435,16 @@ export default function Resume() {
           </div>
 
           <div className="border-t px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
-
             <span className="text-sm text-gray-600">
               Showing {(page - 1) * PAGE_SIZE + 1}–
-              {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems} Resumes
+              {Math.min(
+                page * PAGE_SIZE,
+                resumesQuery.data?.total || 0
+              )}{" "}
+              of {resumesQuery.data?.total || 0} Resumes
             </span>
 
             <div className="flex items-center gap-2">
-
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
@@ -508,8 +454,7 @@ export default function Resume() {
                 Prev
               </button>
 
-              {[...Array(totalPages)].map((_, i) => {
-
+              {[...Array(resumesQuery.data?.totalPages || 1)].map((_, i) => {
                 const num = i + 1;
 
                 return (
@@ -525,41 +470,33 @@ export default function Resume() {
               })}
 
               <button
-                disabled={page === totalPages}
+                disabled={page === (resumesQuery.data?.totalPages || 1)}
                 onClick={() => setPage(page + 1)}
-                className={`px-3 py-1 rounded-md glass ${page === totalPages
-                  ? "opacity-50"
-                  : "hover:scale-105"
+                className={`px-3 py-1 rounded-md glass ${page === (resumesQuery.data?.totalPages || 1)
+                    ? "opacity-50"
+                    : "hover:scale-105"
                   }`}
               >
                 Next
               </button>
-
             </div>
           </div>
         </div>
 
-        <ViewModal
-          open={!!viewItem}
-          item={viewItem}
-          onClose={closeView}
-        />
+        <ViewModal open={!!viewItem} item={viewItem} onClose={closeView} />
 
         <ConfirmModal
           key={confirmConfig.open ? Date.now() : "confirm"}
           open={confirmConfig.open}
           title={confirmConfig.title}
           message={confirmConfig.message}
-          onCancel={() =>
-            setConfirmConfig((c) => ({ ...c, open: false }))
-          }
+          onCancel={() => setConfirmConfig((c) => ({ ...c, open: false }))}
           onConfirm={() => {
             confirmConfig.onConfirm?.();
           }}
           confirmLabel="Delete"
           cancelLabel="Cancel"
         />
-
       </div>
     </div>
   );

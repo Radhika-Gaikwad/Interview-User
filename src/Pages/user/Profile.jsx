@@ -4,57 +4,74 @@ import { getProfile, updateProfile, logoutUser } from "../../Services/userServic
 import { Mail, Briefcase, LogOut, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ChangePasswordModal from "../../Components/ChangePasswordModal";
-import AILoader from "../../Components/AILoader"; 
+import AILoader from "../../Components/AILoader";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 
 const Profile = () => {
-  const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({});
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
-const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const queryClient = useQueryClient();
+
+  // 🔥 OPTIMIZATION 1: Cache the profile for 10 minutes to prevent layout thrashing
+  const { data: profile, isLoading: loading } = useQuery({
+    queryKey: ['profile'],
+    queryFn: getProfile,
+    staleTime: 10 * 60 * 1000,
+  });
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await getProfile();
-
-        if (!data) {
-          console.warn("No profile found, redirecting to login");
-          navigate("/login", { replace: true });
-          return;
-        }
-
-        setProfile(data); // set profile safely
-        setForm({
-          fullName: data.fullName || "",
-          role: data.role || "",
-          resumeUrl: data.resumeUrl || "",
-        });
-      } catch (err) {
-        console.error("Failed to load profile", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, []);
-
-  const handleUpdate = async () => {
-    try {
-      const updatedUser = await updateProfile(form);
-      setUser(updatedUser);
-      setEditMode(false);
-    } catch {
-      alert("Failed to update profile");
+    if (profile) {
+      setForm({
+        fullName: profile.fullName || "",
+        role: profile.role || "",
+        resumeUrl: profile.resumeUrl || "",
+      });
+    } else if (!loading) {
+      // Only navigate away if it's explicitly not loading and no profile exists
+      navigate("/login", { replace: true });
     }
+  }, [profile, loading, navigate]);
+
+  // 🔥 OPTIMIZATION 2: Optimistic updates
+  const { mutate: updateProfileMutation } = useMutation({
+    mutationFn: updateProfile,
+    onMutate: async (newProfileData) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ['profile'] });
+
+      const previousProfile = queryClient.getQueryData(['profile']);
+
+      // Optimistically update the cache with the new form data
+      queryClient.setQueryData(['profile'], (old) => ({
+        ...old,
+        ...newProfileData
+      }));
+
+      setEditMode(false);
+      return { previousProfile };
+    },
+    onError: (err, newProfileData, context) => {
+      // If the mutation fails, roll back to the previous profile state
+      queryClient.setQueryData(['profile'], context.previousProfile);
+      alert("Failed to update profile");
+      setEditMode(true);
+    },
+    onSettled: () => {
+      // Sync with server quietly in the background
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+
+  const handleUpdate = () => {
+    updateProfileMutation(form);
   };
 
- if (loading) return <AILoader text="Loading Profile..." />;
+  // Only show the hard loader on the initial fetch, not background refetches
+  if (loading && !profile) return <AILoader text="Loading Profile..." />;
 
   return (
     <div className="theme-bg min-h-screen">
@@ -106,7 +123,7 @@ const [showChangePassword, setShowChangePassword] = useState(false);
                 </h1>
               )}
 
-              {/* ROLE */}
+              {/* ROLE - FIXED DOM NESTING */}
               <div className="mt-2 flex items-center gap-2 text-gray-600 text-sm">
                 <Briefcase size={16} />
                 {editMode ? (
@@ -117,10 +134,10 @@ const [showChangePassword, setShowChangePassword] = useState(false);
                     }
                     className="border rounded-md px-2 py-1 text-sm bg-white"
                   >
-                    <option>Student</option>
-                    <option>Job Seeker</option>
-                    <option>Working Professional</option>
-                    <option>HR / Recruiter</option>
+                    <option value="Student">Student</option>
+                    <option value="Job Seeker">Job Seeker</option>
+                    <option value="Working Professional">Working Professional</option>
+                    <option value="HR / Recruiter">HR / Recruiter</option>
                   </select>
                 ) : (
                   <span>{profile?.role}</span>
@@ -143,8 +160,15 @@ const [showChangePassword, setShowChangePassword] = useState(false);
                       Save Changes
                     </button>
                     <button
-                      onClick={() => setEditMode(false)}
-                      className="px-4 py-2 rounded-lg bg-white/70 text-sm"
+                      onClick={() => {
+                        setEditMode(false);
+                        setForm({
+                          fullName: profile?.fullName || "",
+                          role: profile?.role || "",
+                          resumeUrl: profile?.resumeUrl || "",
+                        });
+                      }}
+                      className="px-4 py-2 rounded-lg bg-white/70 text-sm hover:bg-white"
                     >
                       Cancel
                     </button>
@@ -176,13 +200,13 @@ const [showChangePassword, setShowChangePassword] = useState(false);
           </h2>
 
           <div className="space-y-4 text-sm text-gray-700">
-           <div
-  onClick={() => setShowChangePassword(true)}
-  className="flex items-center gap-3 cursor-pointer hover:text-indigo-600"
->
-  <Settings size={18} /> Change Password
-</div>
-            
+            <div
+              onClick={() => setShowChangePassword(true)}
+              className="flex items-center gap-3 cursor-pointer hover:text-indigo-600 w-fit"
+            >
+              <Settings size={18} /> Change Password
+            </div>
+
           </div>
         </motion.div>
       </div>
@@ -198,11 +222,12 @@ const [showChangePassword, setShowChangePassword] = useState(false);
         />
       )}
 
+      {/* CHANGE PASSWORD MODAL */}
       {showChangePassword && (
-  <ChangePasswordModal
-    onClose={() => setShowChangePassword(false)}
-  />
-)}
+        <ChangePasswordModal
+          onClose={() => setShowChangePassword(false)}
+        />
+      )}
     </div>
   );
 };

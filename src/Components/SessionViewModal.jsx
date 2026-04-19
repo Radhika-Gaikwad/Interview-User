@@ -16,22 +16,37 @@ import {
 import { X } from "lucide-react";
 import { getPreviewSrc } from "../utils/getPreviewSrc";
 
+// ✅ Helper to safely format Firebase timestamps OR standard JS Date strings
+const formatDateTime = (timestamp) => {
+  if (!timestamp) return "—";
+  try {
+    let dateObj;
+    if (typeof timestamp === 'object' && timestamp._seconds) {
+      dateObj = new Date(timestamp._seconds * 1000);
+    } else {
+      dateObj = new Date(timestamp);
+    }
+    return dateObj.toLocaleString();
+  } catch {
+    return "Invalid Date";
+  }
+};
+
 export default function SessionViewModal({ open, item, onClose }) {
   const [previewOpen, setPreviewOpen] = useState(false);
-
   const [previewSrc, setPreviewSrc] = useState("");
-const [step, setStep] = useState(1); // ✅ NEW step state
+  const [step, setStep] = useState(1); // ✅ NEW step state
 
-useEffect(() => {
-  const loadPreview = async () => {
-    if (!item?.resumePreviewUrl) return;
+  useEffect(() => {
+    const loadPreview = async () => {
+      if (!item?.resumePreviewUrl) return;
 
-    const url = await getPreviewSrc(item.resumePreviewUrl);
-    setPreviewSrc(url);
-  };
+      const url = await getPreviewSrc(item.resumePreviewUrl);
+      setPreviewSrc(url);
+    };
 
-  loadPreview();
-}, [item]);
+    loadPreview();
+  }, [item]);
 
   useEffect(() => {
     if (open) {
@@ -43,32 +58,29 @@ useEffect(() => {
 
   if (!open || !item) return null;
 
-
   const handleDownload = async () => {
-  try {
-    const res = await fetch(item.resumeDownloadUrl, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+    try {
+      const res = await fetch(item.resumeDownloadUrl, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data?.url) {
-      window.open(data.url, "_blank");
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err) {
+      console.error("Download failed:", err);
     }
-  } catch (err) {
-    console.error("Download failed:", err);
-  }
-};
+  };
+
   const statusColors = {
     active: "bg-green-100 text-green-700",
     completed: "bg-red-100 text-red-700",
     draft: "bg-gray-100 text-gray-700",
   };
-
-
-  
 
   return (
     <div className="fixed inset-0 z-[999999] flex items-center justify-center animate-fadeIn">
@@ -156,20 +168,20 @@ useEffect(() => {
                 </button>
 
                <button
-  onClick={handleDownload}
-  className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl shadow"
->
-  <FaDownload />
-  Download Resume
-</button>
+                  onClick={handleDownload}
+                  className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl shadow"
+                >
+                  <FaDownload />
+                  Download Resume
+                </button>
               </div>
 
              {previewOpen && previewSrc && (
-  <iframe
-    src={previewSrc}
-    className="w-full h-[520px] rounded-xl border"
-  />
-)}
+                <iframe
+                  src={previewSrc}
+                  className="w-full h-[520px] rounded-xl border"
+                />
+              )}
             </GlassSection>
           )}
 
@@ -180,7 +192,7 @@ useEffect(() => {
             <InfoCard
               icon={<FaCalendarAlt />}
               label="Start Time"
-              value={item.startAt ? new Date(item.startAt).toLocaleString() : "—"}
+              value={formatDateTime(item.startAt)} // ✅ Using the new helper
             />
           </div>
 
@@ -190,7 +202,7 @@ useEffect(() => {
             <InfoCard
               icon={<FaCalendarAlt />}
               label="Created At"
-              value={new Date(item.createdAt).toLocaleString()}
+              value={formatDateTime(item.createdAt)} // ✅ Using the new helper
             />
           </div>
         </div>
@@ -199,9 +211,9 @@ useEffect(() => {
         <div className="p-4 border-t border-white/40 flex justify-end bg-gray-50 backdrop-blur-md">
           <button
            onClick={() => {
-  setStep(1);        // ✅ reset BEFORE closing
-  onClose();
-}}
+              setStep(1);        // ✅ reset BEFORE closing
+              onClose();
+            }}
             className="px-5 py-2 rounded-xl theme-secondary shadow-md hover:brightness-110 hover:scale-105 transition-all duration-200"
           >
             Close

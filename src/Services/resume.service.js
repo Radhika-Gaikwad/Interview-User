@@ -1,4 +1,4 @@
-import axiosInstance from "../utils/axiosInstance"; // your existing axios instance
+import axiosInstance from "../utils/axiosInstance";
 
 // Create resume
 export const createResumeService = (payload) => {
@@ -11,6 +11,7 @@ export const getResumesService = (page = 1, limit = 6) => {
     params: { page, limit },
   });
 };
+
 // Delete resume
 export const deleteResumeService = (id) => {
   return axiosInstance.delete(`/resume/${id}`);

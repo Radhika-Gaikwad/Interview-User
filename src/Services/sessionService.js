@@ -1,3 +1,4 @@
+// sessionService.js
 import api from "../utils/axiosInstance";
 
 export const createSession = async (payload) => {
@@ -5,9 +6,9 @@ export const createSession = async (payload) => {
   return data;
 };
 
-export const listSessions = async (page = 1, limit = 6) => {
+export const listSessions = async (page = 1, limit = 6, query = "", company = "", status = "all", sort = "newest") => {
   const { data } = await api.get("/sessions", {
-    params: { page, limit },
+    params: { page, limit, q: query, company, status, sort },
   });
 
   return data; // {data, page, total, totalPages}
@@ -42,8 +43,6 @@ export const duplicateSession = async (id) => {
   return res.data;
 };
 
-
-
 export default {
   createSession,
   listSessions,
@@ -53,5 +52,4 @@ export default {
   connectSession,
   endSession,
   duplicateSession,
-
 };

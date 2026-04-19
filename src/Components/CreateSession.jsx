@@ -147,6 +147,13 @@ const prev = () => {
   });
 };
 
+
+useEffect(() => {
+  if (resumeMode === "existing" && form.resumeId) {
+    // already selected → nothing needed
+  }
+}, [resumeMode]);
+
   /* ================= CREATE SESSION ================= */
   async function createSession() {
     if (!form.company || !form.position)
@@ -455,26 +462,27 @@ onCreated?.(session);
       <select
         value={form.resumeId || ""}
         onChange={async (e) => {
+  const value = e.target.value;
 
-          const selected = existingResumes.find(
-            r => r._id === e.target.value
-          )
+  const selected = existingResumes.find(
+    r => String(r._id) === value
+  );
 
-          if (!selected) return
+  if (!selected) return;
 
-          const previewLink =
-            selected.previewUrl ||
-            selected.resumeUrl ||
-            selected.downloadUrl;
+  const previewLink =
+    selected.previewUrl ||
+    selected.resumeUrl ||
+    selected.downloadUrl;
 
-          setField("resumeId", selected._id)
-          setField("resumeUrl", selected.downloadUrl)
-          setField("resumeTitle", selected.title)
+  setField("resumeId", String(selected._id)); // ✅ FIX
+  setField("resumeUrl", selected.downloadUrl);
+  setField("resumeTitle", selected.title);
 
-          const signed = await getPreviewSrc(previewLink);
-          setPreviewUrl(signed);
+  const signed = await getPreviewSrc(previewLink);
 
-        }}
+  setPreviewUrl(signed);
+}}
         className="w-full appearance-none p-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
       >
 
@@ -484,9 +492,9 @@ onCreated?.(session);
         </option>
 
         {existingResumes.map(r => (
-          <option key={r._id} value={r._id}>
-            {r.title}
-          </option>
+       <option key={r._id} value={String(r._id)}>
+  {r.title}
+</option>
         ))}
 
       </select>

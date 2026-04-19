@@ -1,21 +1,29 @@
 // InterviewTable.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MoreVertical, Edit2, Trash2, Play, Eye, Copy, Download } from "lucide-react";
 import sessionService from "../../Services/sessionService";
 import SessionViewModal from "../../Components/SessionViewModal";
 import SessionEditModal from "../../Components/SessionEditModal";
 import ConnectModal from "../../Components/ConnectModal";
 import AILoader from "../../Components/AILoader";
-import { getProfile } from "../../Services/userService";
-
 
 const PAGE_SIZE = 5;
 
+// Safely handles Firebase _seconds or standard JS Dates
 function formatDate(d) {
+  if (!d) return "N/A";
   try {
-    return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    let dateObj;
+    if (d && typeof d === 'object' && d._seconds) {
+      dateObj = new Date(d._seconds * 1000);
+    } else {
+      dateObj = new Date(d);
+    }
+    return dateObj.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   } catch {
-    return d;
+    return "Invalid Date";
   }
 }
 
@@ -29,17 +37,13 @@ function Modal({ open, onClose, title, children }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-
       {/* Modal Box */}
       <div className="relative w-full max-w-xl bg-white rounded-2xl p-6 shadow-2xl z-10 transition-all scale-100">
-
-        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
           <button
@@ -49,8 +53,6 @@ function Modal({ open, onClose, title, children }) {
             ✕
           </button>
         </div>
-
-        {/* Content */}
         <div>{children}</div>
       </div>
     </div>
@@ -62,7 +64,6 @@ function Confirm({ open, onCancel, onConfirm, title, message, confirmLabel = "Co
     <Modal open={open} onClose={onCancel} title={title}>
       <div className="bg-white p-4 rounded-xl shadow-md">
         <p className="text-sm text-gray-700 mb-4">{message}</p>
-
         <div className="flex justify-end gap-2">
           <button
             onClick={onCancel}
@@ -70,7 +71,6 @@ function Confirm({ open, onCancel, onConfirm, title, message, confirmLabel = "Co
           >
             Cancel
           </button>
-
           <button
             onClick={onConfirm}
             className="px-3 py-2 rounded-md theme-primary"
@@ -84,7 +84,7 @@ function Confirm({ open, onCancel, onConfirm, title, message, confirmLabel = "Co
 }
 
 // Actions menu (hamburger)
-function ActionsMenu({ open, anchorRect,  onAction }) {
+function ActionsMenu({ open, anchorRect, onAction }) {
   if (!open) return null;
 
   const style = anchorRect
@@ -115,13 +115,17 @@ function ActionsMenu({ open, anchorRect,  onAction }) {
 }
 
 export default function InterviewTable() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState("");
+  // 🔥 OPTIMIZATION: Separate search input from API query to prevent API spam
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
   const [companyFilter, setCompanyFilter] = useState("");
-  const [expiredFilter, setExpiredFilter] = useState("all"); // all, active, expired
+  const [expiredFilter, setExpiredFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("newest");
+
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // modals
   const [editItem, setEditItem] = useState(null);
@@ -129,98 +133,111 @@ export default function InterviewTable() {
   const [connectItem, setConnectItem] = useState(null);
   const [isConnectOpen, setIsConnectOpen] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, id: null });
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalRecords, setTotalRecords] = useState(0);
-  // actions menu
   const [menu, setMenu] = useState({ open: false, id: null, rect: null });
 
-  // responsive width (for card variants on tablet vs mobile)
+  // responsive width with Throttle to prevent render thrashing
   const [w, setW] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+
   useEffect(() => {
-    const onResize = () => setW(window.innerWidth);
+    let timeoutId;
+    const onResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => setW(window.innerWidth), 150); // ⚡ Throttled
+    };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
+  // 🔥 OPTIMIZATION: Debounce the search input
   useEffect(() => {
-    loadSessions(page);
-  }, [page]);
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchInput);
+    }, 500); // ⚡ Waits 500ms after user stops typing to trigger search
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    } else {
+      if (page !== 1) setPage(1);
+    }
+  }, [debouncedQuery, companyFilter, expiredFilter, sort]);
+
+  const { data: sessionData, isLoading: loading } = useQuery({
+    queryKey: ['sessions', page, debouncedQuery, companyFilter, expiredFilter, sort],
+    queryFn: async () => {
+      const res = await sessionService.listSessions(page, PAGE_SIZE, debouncedQuery, companyFilter, expiredFilter, sort);
+      const sessions = Array.isArray(res) ? res : res.data || [];
+      const mapped = sessions.map((s) => ({
+        id: (s._id || s.id || "").toString(),
+        company: s.company || "",
+        position: s.position || s.jobDescription || "",
+        endsIn: {
+          expired: s.status === "completed",
+          credits: s.creditsUsed || 0
+        },
+        aiUsage: s.aiUsage || 0,
+        createdAt: s.createdAt,
+        raw: s,
+      }));
+      return {
+        data: mapped,
+        totalPages: res.totalPages || 1,
+        totalRecords: res.total || 0,
+      };
+    },
+    keepPreviousData: true,
+  });
+
+  const data = sessionData?.data || [];
+  const totalPages = sessionData?.totalPages || 1;
+  const totalRecords = sessionData?.totalRecords || 0;
 
   useEffect(() => {
-  const handleUpdate = () => loadSessions(1);
-
-  window.addEventListener("session-updated", handleUpdate);
-  return () => window.removeEventListener("session-updated", handleUpdate);
-}, []);
+    const handleUpdate = () => {
+      setPage(1);
+      queryClient.invalidateQueries(['sessions']);
+    };
+    window.addEventListener("session-updated", handleUpdate);
+    return () => window.removeEventListener("session-updated", handleUpdate);
+  }, [queryClient]);
 
   const companies = useMemo(() => Array.from(new Set(data.map((d) => d.company))).sort(), [data]);
 
-
-
-
   useEffect(() => {
     if (page > totalPages) setPage(1);
-  }, [totalPages]);
+  }, [totalPages, page]);
 
-  const pageItems = useMemo(() => {
-    let items = [...data];
-
-    // 1. Filter by search query (company or position)
-    if (query) {
-      const q = query.toLowerCase();
-      items = items.filter(
-        (d) =>
-          (d.company || "").toLowerCase().includes(q) ||
-          (d.position || "").toLowerCase().includes(q)
-      );
-    }
-
-    // 2. Filter by company
-    if (companyFilter) {
-      items = items.filter((d) => d.company === companyFilter);
-    }
-
-    // 3. Filter by status
-    if (expiredFilter !== "all") {
-      const isExpired = expiredFilter === "expired";
-      items = items.filter((d) => !!d.endsIn?.expired === isExpired);
-    }
-
-    // 4. Sort
-    if (sort === "newest") {
-      items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    } else if (sort === "oldest") {
-      items.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    }
-
-    return items;
-  }, [data, query, companyFilter, expiredFilter, sort]);
   // actions
   function handleDelete(id) {
     setConfirm({ open: true, id });
   }
 
+  const deleteMutation = useMutation({
+    mutationFn: (id) => sessionService.deleteSession(id),
+    onSuccess: () => queryClient.invalidateQueries(['sessions'])
+  });
+
   function confirmDelete() {
-    (async () => {
-      try {
-        // if this is a local-only item (sample) it starts with 'i' — remove locally
-        if (typeof confirm.id === "string" && confirm.id.startsWith("i")) {
-          setData((d) => d.filter((it) => it.id !== confirm.id));
-          return;
-        }
+    if (typeof confirm.id === "string" && confirm.id.startsWith("i")) {
+      queryClient.setQueryData(['sessions', page], (old) => {
+        if (!old) return old;
+        return { ...old, data: old.data.filter((it) => it.id !== confirm.id) };
+      });
+      setConfirm({ open: false, id: null });
+      return;
+    }
 
-        await sessionService.deleteSession(confirm.id);
-        setData((d) => d.filter((it) => it.id !== confirm.id));
-      } catch (err) {
-        console.error("Delete failed:", err);
-      } finally {
-        setConfirm({ open: false, id: null });
-      }
-    })();
+    deleteMutation.mutate(confirm.id, {
+      onSettled: () => setConfirm({ open: false, id: null })
+    });
   }
-
-
-
 
   function openMenuFor(e, id) {
     e.stopPropagation();
@@ -228,20 +245,26 @@ export default function InterviewTable() {
     setMenu({ open: true, id, rect });
   }
 
+  const duplicateMutation = useMutation({
+    mutationFn: (id) => sessionService.duplicateSession(id),
+    onSuccess: () => {
+      setPage(1);
+      queryClient.invalidateQueries(['sessions']);
+      window.dispatchEvent(new Event("session-updated"));
+    }
+  });
+
   function onMenuAction(action) {
     const id = menu.id;
     const item = data.find((d) => d.id === id);
     setMenu({ open: false, id: null, rect: null });
     if (!item) return;
     if (action === "start") {
-      // open Connect modal pre-filled for this session
       setConnectItem(item);
       setIsConnectOpen(true);
     } else if (action === "view") {
-      // fetch full session details and open SessionViewModal
       (async () => {
         try {
-          // if we already have raw session data, use it; otherwise fetch
           let full = item.raw || null;
           if (!full || !full._id) {
             full = await sessionService.getSession(item.id);
@@ -252,21 +275,7 @@ export default function InterviewTable() {
         }
       })();
     } else if (action === "duplicate") {
-      (async () => {
-        try {
-          await sessionService.duplicateSession(id);
-
-// Always reset to first page
-setPage(1);
-
-// Trigger global refresh
-window.dispatchEvent(new Event("session-updated"));
-
-       
-        } catch (err) {
-          console.error("Duplicate failed:", err);
-        }
-      })();
+      duplicateMutation.mutate(id);
     } else if (action === "export") {
       const blob = new Blob([JSON.stringify(item, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -278,17 +287,23 @@ window.dispatchEvent(new Event("session-updated"));
     }
   }
 
+  const connectMutation = useMutation({
+    mutationFn: ({ id, payload }) => sessionService.connectSession(id, payload),
+  });
+
   async function handleConnectActivate({ shareAudio, connectionMethod, meetingLink }) {
-    if (!connectItem) return { session: null, user: null }; // safe fallback
+    if (!connectItem) return { session: null, user: null };
 
     try {
-      // 1️⃣ Connect session
-      const res = await sessionService.connectSession(connectItem.id, {
-        shareAudio,
-        connectionMethod,
-        meetingLink,
-        language: connectItem.raw?.language,
-        aiModel: connectItem.raw?.aiModel,
+      const res = await connectMutation.mutateAsync({
+        id: connectItem.id,
+        payload: {
+          shareAudio,
+          connectionMethod,
+          meetingLink,
+          language: connectItem.raw?.language,
+          aiModel: connectItem.raw?.aiModel,
+        }
       });
 
       if (!res || !res.session) {
@@ -296,50 +311,24 @@ window.dispatchEvent(new Event("session-updated"));
         return { session: null, user: null };
       }
 
-      // 2️⃣ Close modal
       setIsConnectOpen(false);
       setConnectItem(null);
 
-      // 3️⃣ Open meeting provider
       const url = meetingLink || getDefaultUrl(connectionMethod);
       if (url) window.open(url, "_blank");
 
-      // 4️⃣ Fetch updated user profile to get latest credits
-      const updatedUser = await getProfile();
-      if (!updatedUser) {
-        console.warn("Failed to fetch updated user profile");
-      }
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
 
-      console.log("Credits after activation:", updatedUser?.credits);
-
-      // 5️⃣ Refresh sessions list
-      const listRes = await sessionService.listSessions();
-      const sessions = Array.isArray(listRes) ? listRes : listRes.data || [];
-      const mapped = sessions.map((s) => ({
-        id: (s._id || s.id || "").toString(),
-        company: s.company || "",
-        position: s.position || s.jobDescription || "",
-        endsIn: { expired: s.status === "completed", credits: s.creditsUsed || 0 },
-        aiUsage: s.aiUsage || 0,
-        createdAt: s.createdAt,
-        raw: s,
-      }));
-
-      setData(mapped);
-      setTotalPages(listRes.totalPages || 1);
-      setTotalRecords(listRes.total || 0);
-      setPage(listRes.page || 1);
-
-      return { session: res.session, user: updatedUser }; // return updated user
+      return { session: res.session, user: null };
     } catch (err) {
       console.error("Connect failed:", err);
       const msg = err?.response?.data?.message || err.message || "Failed to activate";
-      if (msg.toLowerCase().includes("insufficient")) window.location.href = "/buy-credits";
-      return { session: null, user: null }; // fallback
+      if (String(msg).toLowerCase().includes("insufficient")) navigate("/buy-credits");
+      return { session: null, user: null };
     }
   }
 
-  // Helper
   function getDefaultUrl(method) {
     switch (method) {
       case "zoom": return "https://zoom.us/";
@@ -350,40 +339,11 @@ window.dispatchEvent(new Event("session-updated"));
     }
   }
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }) => sessionService.updateSession(id, payload),
+    onSuccess: () => queryClient.invalidateQueries(['sessions'])
+  });
 
-
- async function loadSessions(pageNumber = page) {
-  try {
-    setLoading(true);
-
-    const res = await sessionService.listSessions(pageNumber, PAGE_SIZE);
-
-    const sessions = Array.isArray(res) ? res : res.data || [];
-
-    const mapped = sessions.map((s) => ({
-      id: (s._id || s.id || "").toString(),
-      company: s.company || "",
-      position: s.position || s.jobDescription || "",
-      endsIn: {
-        expired: s.status === "completed",
-        credits: s.creditsUsed || 0
-      },
-      aiUsage: s.aiUsage || 0,
-      createdAt: s.createdAt,
-      raw: s,
-    }));
-
-    setData(mapped);
-    setTotalPages(res.totalPages || 1);
-    setTotalRecords(res.total || 0);
-
-    // ❌ REMOVE THIS
-    // setPage(res.page || 1);
-
-  } finally {
-    setLoading(false);
-  }
-}
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -391,12 +351,10 @@ window.dispatchEvent(new Event("session-updated"));
       </div>
     );
   }
+
   return (
     <>
-
       <div className="p-2 md:p-4 lg:p-4">
-
-
         <div className="mb-6 w-full">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
@@ -406,8 +364,8 @@ window.dispatchEvent(new Event("session-updated"));
                 Search
               </label>
               <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search company or position..."
                 className="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-theme-primary focus:border-theme-primary transition w-full text-sm"
               />
@@ -465,7 +423,6 @@ window.dispatchEvent(new Event("session-updated"));
           </div>
         </div>
 
-
         <div className="glass-card rounded-2xl overflow-hidden border">
           {/* Desktop table (lg and above) */}
           <div className="hidden lg:grid grid-cols-[60px_1fr_1fr_220px_160px_160px] bg-white/40 px-4 py-3 font-semibold text-gray-700">
@@ -474,13 +431,12 @@ window.dispatchEvent(new Event("session-updated"));
             <div>Position</div>
             <div>Ends In </div>
             <div>Created At</div>
-
             <div className="text-right">Action</div>
           </div>
 
           {/* rows (desktop) */}
           <div className="hidden lg:block divide-y">
-            {pageItems.map((row, idx) => {
+            {data.map((row, idx) => {
               const sno = (page - 1) * PAGE_SIZE + idx + 1;
               return (
                 <div key={row.id} className="grid grid-cols-[60px_1fr_1fr_220px_160px_160px] px-4 py-3 items-center ">
@@ -496,17 +452,12 @@ window.dispatchEvent(new Event("session-updated"));
                         <span className="text-sm">{row.endsIn?.credits} credits</span>
                       </div>
                     </div>
-
                   </div>
-
                   <div className="text-sm">{formatDate(row.createdAt)}</div>
-
                   <div className="flex justify-end items-center gap-2">
-                    {/* Hamburger first */}
                     <button onClick={(e) => openMenuFor(e, row.id)} className="p-2 glass rounded-lg" title="More">
                       <MoreVertical size={16} />
                     </button>
-
                     <button onClick={() => (async () => {
                       try {
                         let full = row.raw || null;
@@ -518,7 +469,6 @@ window.dispatchEvent(new Event("session-updated"));
                     })()} className="p-2 glass rounded-lg" title="Edit">
                       <Edit2 size={16} />
                     </button>
-
                     <button onClick={() => handleDelete(row.id)} className="p-2 bg-red-50 text-red-600 rounded-lg" title="Delete">
                       <Trash2 size={16} />
                     </button>
@@ -526,48 +476,38 @@ window.dispatchEvent(new Event("session-updated"));
                 </div>
               );
             })}
-
-            {pageItems.length === 0 && <div className="p-6 text-center text-gray-600">No records found.</div>}
+            {data.length === 0 && <div className="p-6 text-center text-gray-600">No records found.</div>}
           </div>
 
           {/* Cards for tablet (md) and mobile (sm) */}
           <div className="lg:hidden p-2 space-y-3">
-            {pageItems.map((row) => {
-              // card variant: tablet (md: show more details horizontally), mobile (sm: stacked)
-              const isTablet = w >= 640 && w < 1024; // md-range
+            {data.map((row) => {
+              const isTablet = w >= 640 && w < 1024;
               return (
                 <div key={row.id} className={`p-3 rounded-xl border ${isTablet ? "bg-white/80 flex items-center justify-between gap-4" : "bg-white/70"} `}>
-                  {/* Left content */}
                   <div className={`${isTablet ? "flex items-center gap-4 flex-1" : ""}`}>
                     <div className={`${isTablet ? "w-14 text-sm text-gray-700" : ""}`}>
                       <div className="font-medium">{row.company}</div>
                       <div className="text-sm text-gray-600">{row.position}</div>
                     </div>
-
                     <div className={`${isTablet ? "flex items-center gap-3" : "mt-2"}`}>
                       <div>
                         <Badge className={`${row.endsIn?.expired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
                           {row.endsIn?.expired ? "Expired" : "Active"}
                         </Badge>
                       </div>
-
                       <div className="text-xs text-gray-600">
                         <div className="mt-1">Created: {formatDate(row.createdAt)}</div>
                       </div>
-
                     </div>
                   </div>
-
-                  {/* actions */}
                   <div className="flex items-start gap-2 mt-3 md:mt-0">
                     <button onClick={(e) => openMenuFor(e, row.id)} className="p-2 glass rounded-lg" title="More">
                       <MoreVertical size={16} />
                     </button>
-
                     <button onClick={() => setEditItem(row)} className="p-2 glass rounded-lg" title="Edit">
                       <Edit2 size={16} />
                     </button>
-
                     <button onClick={() => handleDelete(row.id)} className="p-2 bg-red-50 text-red-600 rounded-lg" title="Delete">
                       <Trash2 size={16} />
                     </button>
@@ -575,19 +515,16 @@ window.dispatchEvent(new Event("session-updated"));
                 </div>
               );
             })}
-
-            {pageItems.length === 0 && <div className="p-6 text-center text-gray-600">No records found.</div>}
+            {data.length === 0 && <div className="p-6 text-center text-gray-600">No records found.</div>}
           </div>
 
           {/* footer / pagination */}
           <div className="border-t px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
             <div className="text-sm text-gray-600">Showing {(page - 1) * PAGE_SIZE + 1} – {Math.min(page * PAGE_SIZE, totalRecords)} of {totalRecords} Sessions</div>
-
             <div className="flex items-center gap-2">
               <button disabled={page === 1} onClick={() => setPage(page - 1)} className={`px-3 py-1 rounded-md glass ${page === 1 ? "opacity-50" : "hover:scale-105"}`}>
                 Prev
               </button>
-
               {[...Array(totalPages)].map((_, i) => {
                 const num = i + 1;
                 return (
@@ -596,7 +533,6 @@ window.dispatchEvent(new Event("session-updated"));
                   </button>
                 );
               })}
-
               <button disabled={page === totalPages} onClick={() => setPage(page + 1)} className={`px-3 py-1 rounded-md glass ${page === totalPages ? "opacity-50" : "hover:scale-105"}`}>
                 Next
               </button>
@@ -605,45 +541,26 @@ window.dispatchEvent(new Event("session-updated"));
         </div>
 
         <SessionEditModal
+          key={editItem?._id || editItem?.id}
           open={!!editItem}
           item={editItem}
           onClose={() => {
-  setEditItem(null);
-}}
+            setEditItem(null);
+          }}
           onSave={async (payload) => {
             try {
-              const res = await sessionService.updateSession(
-                editItem._id || editItem.id,
-                payload
-              );
-
-              const mapped = {
-                id: res._id || res.id,
-                company: res.company,
-                position: res.position || res.jobDescription,
-                endsIn: { expired: res.status === 'completed', credits: res.creditsUsed || 0 },
-                aiUsage: res.aiUsage || 0,
-                createdAt: res.createdAt,
-                raw: res,
-              };
-
-              setData((d) =>
-                d.map((it) => (it.id === mapped.id ? mapped : it))
-              );
-
-
+              const id = editItem._id || editItem.id;
+              await updateMutation.mutateAsync({ id, payload });
+              setEditItem(null);
             } catch (err) {
               console.error('Edit save failed:', err);
-
-
               throw err;
             }
           }}
         />
-        <SessionViewModal 
-          key={viewItem?._id || viewItem?.id} 
-        open={!!viewItem} item={viewItem} onClose={() => setViewItem(null)} />
-
+        <SessionViewModal
+          key={viewItem?._id || viewItem?.id}
+          open={!!viewItem} item={viewItem} onClose={() => setViewItem(null)} />
 
         <ConnectModal
           isOpen={isConnectOpen}

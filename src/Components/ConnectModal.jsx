@@ -153,8 +153,8 @@ export default function ConnectModal({
           <button
             onClick={onBack}
             className="flex items-center gap-2 px-4 py-2 w-full sm:w-auto bg-gray-100 rounded-lg"
-          >
-            <ArrowLeft size={15} /> Back
+          >Close
+      
           </button>
 
           <button

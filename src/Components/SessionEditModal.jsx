@@ -6,6 +6,7 @@ import { getResumesService } from "../Services/resume.service";
 import { uploadToGCS } from "../utils/gcsUpload";
 import ResumeProcessingLoader from "./ResumeProcessingLoader";
 import { getPreviewSrc } from "../utils/getPreviewSrc";
+import AILoader from "./AILoader";
 
 export default function SessionEditModal({
   open,
@@ -24,11 +25,25 @@ export default function SessionEditModal({
   const [errors, setErrors] = useState({});
   const [previewUrl, setPreviewUrl] = useState("");
   const [signedPreview, setSignedPreview] = useState("");
+  const [initializing, setInitializing] = useState(false);
 
   useEffect(() => {
     if (!open) {
-      setStep(1);
+      setForm({
+        company: "",
+        position: "",
+        jobDescription: "",
+        skills: "",
+        language: "English",
+        resumeUrl: "",
+        durationMinutes: 30,
+        autoExtend: true,
+      });
 
+      setPreviewUrl("");
+      setSignedPreview("");
+      setExistingResumes([]);
+      setResumeMode("current");
     }
   }, [open]);
   useEffect(() => {
@@ -54,10 +69,12 @@ export default function SessionEditModal({
     setField("resumeTitle", "");
     setField("resumeFile", null);
     setField("resumeUrl", "");
+    setField("resumeId", "");
     setPreviewUrl("");
+    setSignedPreview("");
+
     setUploadComplete(false);
   };
-
   useEffect(() => {
     if (resumeMode !== "upload") {
       setUploadComplete(false);
@@ -71,6 +88,7 @@ export default function SessionEditModal({
   const [form, setForm] = useState({
     company: "",
     position: "",
+    resumeId: "",
     jobDescription: "",
     skills: "",
     language: "English",
@@ -83,6 +101,8 @@ export default function SessionEditModal({
     if (!item || !open) return;
 
     const load = async () => {
+      setInitializing(true); // 👈 start loader
+
       const raw = item.raw || item;
 
       const previewLink =
@@ -110,9 +130,13 @@ export default function SessionEditModal({
       });
 
       setPreviewUrl(finalPreview);
-      setSignedPreview(signed);      // signed
+      setSignedPreview(""); // clear firs
+      setSignedPreview(signed);
+
       setResumeMode("current");
       setStep(1);
+
+      setInitializing(false); // 👈 done
     };
 
     load();
@@ -245,6 +269,8 @@ export default function SessionEditModal({
     return Object.keys(newErrors).length === 0;
   };
 
+  if (!open) return null;
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
@@ -276,413 +302,432 @@ export default function SessionEditModal({
 
         {/* BODY (SCROLLABLE) */}
         <div className="p-6 overflow-y-auto flex-1">
-
-          {step === 1 && (
-            <div className="space-y-5">
-
-              <div>
-                <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                  🏢 Company <span className="text-red-500">*</span>
-                </label>
-
-                <input
-                  type="text"
-                  placeholder="Enter Company Name"
-                  value={form.company}
-                  onChange={(e) => {
-                    setField("company", e.target.value);
-                    setErrors((prev) => ({ ...prev, company: "" }));
-                  }}
-                  className={`w-full p-3 rounded-lg border ${errors.company ? "border-red-500" : "border-gray-300"
-                    } focus:ring-2 focus:ring-theme-primary focus:outline-none`}
-                />
-
-                {errors.company && (
-                  <p className="text-red-500 text-xs mt-1">{errors.company}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                  💼 Position <span className="text-red-500">*</span>
-                </label>
-
-                <input
-                  type="text"
-                  placeholder="Enter Position / Role"
-                  value={form.position}
-                  onChange={(e) => {
-                    setField("position", e.target.value);
-                    setErrors((prev) => ({ ...prev, position: "" }));
-                  }}
-                  className={`w-full p-3 rounded-lg border ${errors.position ? "border-red-500" : "border-gray-300"
-                    } focus:ring-2 focus:ring-theme-primary focus:outline-none`}
-                />
-
-                {errors.position && (
-                  <p className="text-red-500 text-xs mt-1">{errors.position}</p>
-                )}
-              </div>
-
-              {/* Job Description */}
-              <div>
-                <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                  📝 Job Description
-                </label>
-
-                <textarea
-                  rows={3}
-                  placeholder="Enter job responsibilities or description"
-                  value={form.jobDescription}
-                  onChange={(e) => setField("jobDescription", e.target.value)}
-                  className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-theme-primary focus:outline-none resize-none"
-                />
-              </div>
-
-              {/* Skills */}
-              <div>
-                <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                  🧭 Skills
-                </label>
-
-                <input
-                  type="text"
-                  placeholder="e.g. React, Node.js, SQL"
-                  value={form.skills}
-                  onChange={(e) => setField("skills", e.target.value)}
-                  className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-theme-primary focus:outline-none"
-                />
-
-                <p className="text-xs text-gray-500 mt-1">
-                  Separate skills with commas.
-                </p>
-              </div>
-
+          {initializing ? (
+            <div className="flex items-center justify-center h-[300px]">
+              <AILoader text="Loading session..." />
             </div>
-          )}
+          ) : (
+            <>
 
-          {step === 2 && (
-            <div className="space-y-5">
+              {step === 1 && (
+                <div className="space-y-5">
 
-              {/* Language */}
+                  <div>
+                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
+                      🏢 Company <span className="text-red-500">*</span>
+                    </label>
 
-              <div>
-                <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                  🌐 Language
-                </label>
+                    <input
+                      type="text"
+                      placeholder="Enter Company Name"
+                      value={form.company}
+                      onChange={(e) => {
+                        setField("company", e.target.value);
+                        setErrors((prev) => ({ ...prev, company: "" }));
+                      }}
+                      className={`w-full p-3 rounded-lg border ${errors.company ? "border-red-500" : "border-gray-300"
+                        } focus:ring-2 focus:ring-theme-primary focus:outline-none`}
+                    />
 
-                <div className="w-full h-10 px-3 flex items-center text-sm rounded-md border border-indigo-300 bg-indigo-50 text-indigo-700 font-medium">
-                  English
-                </div>
-              </div>
+                    {errors.company && (
+                      <p className="text-red-500 text-xs mt-1">{errors.company}</p>
+                    )}
+                  </div>
 
+                  <div>
+                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
+                      💼 Position <span className="text-red-500">*</span>
+                    </label>
 
+                    <input
+                      type="text"
+                      placeholder="Enter Position / Role"
+                      value={form.position}
+                      onChange={(e) => {
+                        setField("position", e.target.value);
+                        setErrors((prev) => ({ ...prev, position: "" }));
+                      }}
+                      className={`w-full p-3 rounded-lg border ${errors.position ? "border-red-500" : "border-gray-300"
+                        } focus:ring-2 focus:ring-theme-primary focus:outline-none`}
+                    />
 
-              {/* Simple English Toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Simple English</span>
+                    {errors.position && (
+                      <p className="text-red-500 text-xs mt-1">{errors.position}</p>
+                    )}
+                  </div>
 
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.simpleEnglish || false}
-                    onChange={() =>
-                      setField("simpleEnglish", !form.simpleEnglish)
-                    }
-                    className="sr-only peer"
-                  />
+                  {/* Job Description */}
+                  <div>
+                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
+                      📝 Job Description
+                    </label>
 
-                  <div className="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-theme-primary"></div>
+                    <textarea
+                      rows={3}
+                      placeholder="Enter job responsibilities or description"
+                      value={form.jobDescription}
+                      onChange={(e) => setField("jobDescription", e.target.value)}
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-theme-primary focus:outline-none resize-none"
+                    />
+                  </div>
 
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
-                </label>
-              </div>
+                  {/* Skills */}
+                  <div>
+                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
+                      🧭 Skills
+                    </label>
 
-              <p className="text-gray-500 text-xs">
-                If English is not your first language, enable this so AI avoids complex vocabulary.
-              </p>
+                    <input
+                      type="text"
+                      placeholder="e.g. React, Node.js, SQL"
+                      value={form.skills}
+                      onChange={(e) => setField("skills", e.target.value)}
+                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-theme-primary focus:outline-none"
+                    />
 
-              {/* Extra Context */}
-              <div>
-                <label className="text-sm font-medium block mb-1">
-                  Extra Context / Instructions (Optional)
-                </label>
-
-                <textarea
-                  rows={4}
-                  placeholder="Write any extra instructions..."
-                  value={form.extraContext || ""}
-                  onChange={(e) => setField("extraContext", e.target.value)}
-                  className="w-full p-3 rounded-lg border border-gray-300"
-                />
-              </div>
-
-              {/* AI Model */}
-              <div>
-                <label className="text-sm font-medium block mb-1">
-                  🤖 AI Model (Optional)
-                </label>
-
-                <select
-                  value={form.aiModel || "GPT-4.1"}
-                  onChange={(e) => setField("aiModel", e.target.value)}
-                  className="w-full p-3 rounded-lg border border-gray-300"
-                >
-                  <option value="GPT-4.1">GPT-4.1 (Smarter)</option>
-                  <option value="GPT-4 Turbo">GPT-4 Turbo</option>
-                  <option value="GPT-3.5">GPT-3.5</option>
-                  <option value="GPT-4 Mini">GPT-4 Mini (Fast & Cheap)</option>
-                </select>
-              </div>
-
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-6">
-
-              {/* OPTIONS */}
-              <div className="flex gap-6 border-b pb-4 text-sm font-medium">
-
-                {/* CURRENT */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={resumeMode === "current"}
-                    onChange={async () => {
-                      resetUploadState();
-                      setResumeMode("current");
-
-                      const raw = item?.raw || item;
-
-                      const previewLink =
-                        raw.resumePreviewUrl ||
-                        (raw.resumeId?._id
-                          ? `/api/resume/view/${raw.resumeId._id}`
-                          : "") ||
-                        raw.resumeUrl ||
-                        raw.downloadUrl ||
-                        "";
-
-                      setField("resumeUrl", raw.resumeDownloadUrl || raw.resumeUrl || "");
-                      setField("resumePreviewUrl", previewLink);
-                      setField("resumeDownloadUrl", raw.resumeDownloadUrl || raw.resumeUrl || "");
-
-                      // ✅ FIX: ALWAYS GET SIGNED URL
-                      const signed = await getPreviewSrc(previewLink);
-                      setPreviewUrl(previewLink);
-                      setSignedPreview(signed);
-                    }}
-                  />
-                  Use Current
-                </label>
-
-                {/* EXISTING */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={resumeMode === "existing"}
-                    onChange={() => {
-                      resetUploadState();
-                      setResumeMode("existing");
-                    }}
-                  />
-                  Existing
-                </label>
-
-                {/* UPLOAD */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={resumeMode === "upload"}
-                    onChange={() => {
-                      resetUploadState();
-                      setResumeMode("upload");
-                    }}
-                  />
-                  Upload New
-                </label>
-              </div>
-
-              {/* EXISTING RESUME */}
-              {resumeMode === "existing" && (
-                <div>
-                  <select
-                    className="w-full p-3 border rounded-lg"
-                    defaultValue=""
-                    onChange={async (e) => {
-                      const selected = existingResumes.find(
-                        r => String(r._id) === e.target.value
-                      );
-
-                      if (!selected) return;
-
-                      const previewLink =
-                        selected.previewUrl ||
-                        selected.resumeUrl ||
-                        selected.downloadUrl;
-
-                      setField("resumeUrl", previewLink);
-                      setField("resumeTitle", selected.title);
-
-                      const signed = await getPreviewSrc(previewLink);
-                      setPreviewUrl(signed);
-                    }}
-                  >
-                    {/* Placeholder (not selectable) */}
-                    <option value="" disabled hidden>
-                      Select Resume
-                    </option>
-
-                    {existingResumes.map(r => (
-                      <option key={r._id} value={r._id}>
-                        {r.title}
-                      </option>
-                    ))}
-                  </select>
-
-                  {!previewUrl && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Select a resume to preview
+                    <p className="text-xs text-gray-500 mt-1">
+                      Separate skills with commas.
                     </p>
-                  )}
+                  </div>
+
                 </div>
               )}
 
-              {/* UPLOAD */}
-              {resumeMode === "upload" && (
-                <div className="space-y-3">
+              {step === 2 && (
+                <div className="space-y-5">
 
-                  <label className="block text-sm font-medium">
-                    Resume Title <span className="text-red-500">*</span>
-                  </label>
+                  {/* Language */}
 
-                  <input
-                    type="text"
-                    placeholder="Resume Title"
-                    value={form.resumeTitle || ""}
-                    onChange={(e) => setField("resumeTitle", e.target.value)}
-                    className="w-full p-3 border rounded-lg"
-                  />
+                  <div>
+                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
+                      🌐 Language
+                    </label>
 
-                  <ResumeUploader
-                    allowExisting={false}
-                    onSelect={({ file }) => {
-                      setField("resumeFile", file);
-                    }}
-                  />
+                    <div className="w-full h-10 px-3 flex items-center text-sm rounded-md border border-indigo-300 bg-indigo-50 text-indigo-700 font-medium">
+                      English
+                    </div>
+                  </div>
 
-                  {!uploadComplete && (
-                    <button
-                      disabled={
-                        !form.resumeTitle?.trim() ||
-                        !form.resumeFile ||
-                        isUploading
-                      }
-                      onClick={async () => {
-                        try {
-                          setIsUploading(true);
-                          showToast("Uploading resume...", "info");
 
-                          const res = await uploadToGCS(
-                            form.resumeFile,
-                            form.resumeTitle
+
+                  {/* Simple English Toggle */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Simple English</span>
+
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.simpleEnglish || false}
+                        onChange={() =>
+                          setField("simpleEnglish", !form.simpleEnglish)
+                        }
+                        className="sr-only peer"
+                      />
+
+                      <div className="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-theme-primary"></div>
+
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
+                    </label>
+                  </div>
+
+                  <p className="text-gray-500 text-xs">
+                    If English is not your first language, enable this so AI avoids complex vocabulary.
+                  </p>
+
+                  {/* Extra Context */}
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      Extra Context / Instructions (Optional)
+                    </label>
+
+                    <textarea
+                      rows={4}
+                      placeholder="Write any extra instructions..."
+                      value={form.extraContext || ""}
+                      onChange={(e) => setField("extraContext", e.target.value)}
+                      className="w-full p-3 rounded-lg border border-gray-300"
+                    />
+                  </div>
+
+                  {/* AI Model */}
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      🤖 AI Model (Optional)
+                    </label>
+
+                    <select
+                      value={form.aiModel || "GPT-4.1"}
+                      onChange={(e) => setField("aiModel", e.target.value)}
+                      className="w-full p-3 rounded-lg border border-gray-300"
+                    >
+                      <option value="GPT-4.1">GPT-4.1 (Smarter)</option>
+                      <option value="GPT-4 Turbo">GPT-4 Turbo</option>
+                      <option value="GPT-3.5">GPT-3.5</option>
+                      <option value="GPT-4 Mini">GPT-4 Mini (Fast & Cheap)</option>
+                    </select>
+                  </div>
+
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-6">
+
+                  {/* OPTIONS */}
+                  <div className="flex gap-6 border-b pb-4 text-sm font-medium">
+
+                    {/* CURRENT */}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={resumeMode === "current"}
+                        onChange={async () => {
+                          resetUploadState(); // already clears preview
+                          setResumeMode("current");
+
+                          const raw = item?.raw || item;
+
+                          const previewLink =
+                            raw.resumePreviewUrl ||
+                            (raw.resumeId?._id
+                              ? `/api/resume/view/${raw.resumeId._id}`
+                              : "") ||
+                            raw.resumeUrl ||
+                            raw.downloadUrl ||
+                            "";
+
+                          setField("resumeUrl", raw.resumeDownloadUrl || raw.resumeUrl || "");
+                          setField("resumePreviewUrl", previewLink);
+                          setField("resumeDownloadUrl", raw.resumeDownloadUrl || raw.resumeUrl || "");
+                          setField("resumeId", ""); // ✅ reset selection
+
+                          const signed = await getPreviewSrc(previewLink);
+
+                          setPreviewUrl(previewLink);
+                          setSignedPreview(signed);
+                        }}
+                      />
+                      Use Current
+                    </label>
+
+                    {/* EXISTING */}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={resumeMode === "existing"}
+                        onChange={() => {
+                          resetUploadState(); // ✅ clears preview
+                          setResumeMode("existing");
+                        }}
+                      />
+                      Existing
+                    </label>
+
+                    {/* UPLOAD */}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={resumeMode === "upload"}
+                        onChange={() => {
+                          resetUploadState(); // ✅ clears preview
+                          setResumeMode("upload");
+                        }}
+                      />
+                      Upload New
+                    </label>
+                  </div>
+
+                  {/* EXISTING RESUME */}
+                  {resumeMode === "existing" && (
+                    <div>
+                      <select
+                        className="w-full p-3 border rounded-lg"
+                        value={form.resumeId || ""}
+                        onChange={async (e) => {
+                          const value = e.target.value;
+
+                          const selected = existingResumes.find(
+                            r => String(r._id) === value
                           );
 
-                          const uploaded = res.resume;
+                          if (!selected) return;
 
-                          setField("resumeUrl", uploaded.downloadUrl);
-                          setField("resumePreviewUrl", uploaded.previewUrl);
-                          setField("resumeDownloadUrl", uploaded.downloadUrl);
+                          const previewLink =
+                            selected.previewUrl ||
+                            selected.resumeUrl ||
+                            selected.downloadUrl;
 
-                          // ✅ FIX: SIGNED URL
-                          const signed = await getPreviewSrc(uploaded.previewUrl);
-                          setPreviewUrl(uploaded.previewUrl);
+                          setField("resumeId", value); // ✅ IMPORTANT
+                          setField("resumeUrl", previewLink);
+                          setField("resumeTitle", selected.title);
+
+                          const signed = await getPreviewSrc(previewLink);
+
+                          setPreviewUrl(previewLink);
                           setSignedPreview(signed);
+                        }}
+                      >
+                        {/* Placeholder (not selectable) */}
+                        <option value="" disabled hidden>
+                          Select Resume
+                        </option>
 
-                          setUploadComplete(true);
+                        {existingResumes.map(r => (
+                          <option key={r._id} value={r._id}>
+                            {r.title}
+                          </option>
+                        ))}
+                      </select>
 
-                        } catch {
-                          showToast("Upload failed", "error");
-                        } finally {
-                          setIsUploading(false);
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-lg text-white ${!form.resumeTitle?.trim() ||
-                        !form.resumeFile ||
-                        isUploading
-                        ? "bg-gray-400"
-                        : "bg-indigo-600"
-                        }`}
-                    >
-                      {isUploading ? "Uploading..." : "Upload Resume"}
-                    </button>
+                      {!previewUrl && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Select a resume to preview
+                        </p>
+                      )}
+                    </div>
                   )}
+
+                  {/* UPLOAD */}
+                  {resumeMode === "upload" && (
+                    <div className="space-y-3">
+
+                      <label className="block text-sm font-medium">
+                        Resume Title <span className="text-red-500">*</span>
+                      </label>
+
+                      <input
+                        type="text"
+                        placeholder="Resume Title"
+                        value={form.resumeTitle || ""}
+                        onChange={(e) => setField("resumeTitle", e.target.value)}
+                        className="w-full p-3 border rounded-lg"
+                      />
+
+                      <ResumeUploader
+                        allowExisting={false}
+                        onSelect={({ file }) => {
+                          setField("resumeFile", file);
+                        }}
+                      />
+
+                      {!uploadComplete && (
+                        <button
+                          disabled={
+                            !form.resumeTitle?.trim() ||
+                            !form.resumeFile ||
+                            isUploading
+                          }
+                          onClick={async () => {
+                            try {
+                              setIsUploading(true);
+                              showToast("Uploading resume...", "info");
+
+                              const res = await uploadToGCS(
+                                form.resumeFile,
+                                form.resumeTitle
+                              );
+
+                              const uploaded = res.resume;
+
+                              setField("resumeId", ""); // ✅ ADD HERE (VERY IMPORTANT)
+
+                              setField("resumeUrl", uploaded.downloadUrl);
+                              setField("resumePreviewUrl", uploaded.previewUrl);
+                              setField("resumeDownloadUrl", uploaded.downloadUrl);
+                              setField("resumeTitle", uploaded.title || form.resumeTitle); // optional but good
+
+                              // ✅ SIGNED URL
+                              const signed = await getPreviewSrc(uploaded.previewUrl);
+                              setPreviewUrl(uploaded.previewUrl);
+                              setSignedPreview(signed);
+
+                              setUploadComplete(true);
+
+
+                            } catch {
+                              showToast("Upload failed", "error");
+                            } finally {
+                              setIsUploading(false);
+                            }
+                          }}
+                          className={`px-4 py-2 rounded-lg text-white ${!form.resumeTitle?.trim() ||
+                            !form.resumeFile ||
+                            isUploading
+                            ? "bg-gray-400"
+                            : "bg-indigo-600"
+                            }`}
+                        >
+                          {isUploading ? "Uploading..." : "Upload Resume"}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* PREVIEW */}
+                  {signedPreview && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">Preview</p>
+
+                      <iframe
+                        key={signedPreview}
+                        src={signedPreview}
+                        className="w-full h-[420px] border rounded-lg bg-gray-50"
+                        title="resume-preview"
+                      />
+
+                      {resumeMode === "upload" && uploadComplete && (
+                        <button
+                          onClick={() => {
+                            setUploadComplete(false);
+                            setField("resumeFile", null);
+                            setField("resumeTitle", "");
+                            setField("resumeId", ""); // ✅ ADD HERE ALSO
+                            setPreviewUrl("");
+                            setSignedPreview(""); // ✅ also clear this
+                          }}
+                          className="text-sm text-indigo-600 underline"
+                        >
+                          Upload another resume
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                 </div>
               )}
+              {step === 4 && (
+                <div className="space-y-4">
 
-              {/* PREVIEW */}
-              {signedPreview && (
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Preview</p>
+                  <label className="flex justify-between items-center">
+                    <span className="text-sm font-medium">
+                      Auto Extend Session
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={form.autoExtend}
+                      onChange={() =>
+                        setField("autoExtend", !form.autoExtend)
+                      }
+                    />
+                  </label>
 
-                  <iframe
-                    key={signedPreview}
-                    src={signedPreview}
-                    className="w-full h-[420px] border rounded-lg bg-gray-50"
-                    title="resume-preview"
-                  />
-
-                  {resumeMode === "upload" && uploadComplete && (
-                    <button
-                      onClick={() => {
-                        setUploadComplete(false);
-                        setField("resumeFile", null);
-                        setField("resumeTitle", "");
-                        setPreviewUrl("");
-                      }}
-                      className="text-sm text-indigo-600 underline"
-                    >
-                      Upload another resume
-                    </button>
-                  )}
+                  <div>
+                    <label className="text-sm block mb-1">
+                      Duration (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      value={form.durationMinutes}
+                      onChange={(e) =>
+                        setField("durationMinutes", e.target.value)
+                      }
+                      className="w-full p-3 border rounded-lg"
+                    />
+                  </div>
                 </div>
               )}
-
-            </div>
+            </>
           )}
-          {step === 4 && (
-            <div className="space-y-4">
-
-              <label className="flex justify-between items-center">
-                <span className="text-sm font-medium">
-                  Auto Extend Session
-                </span>
-                <input
-                  type="checkbox"
-                  checked={form.autoExtend}
-                  onChange={() =>
-                    setField("autoExtend", !form.autoExtend)
-                  }
-                />
-              </label>
-
-              <div>
-                <label className="text-sm block mb-1">
-                  Duration (minutes)
-                </label>
-                <input
-                  type="number"
-                  value={form.durationMinutes}
-                  onChange={(e) =>
-                    setField("durationMinutes", e.target.value)
-                  }
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-            </div>
-          )}
-
         </div>
 
         <div className="p-4 border-t flex justify-between bg-white">
