@@ -352,7 +352,7 @@
   }
 
   .primary-btn {
-    @apply w-full border-0 rounded-lg py-3 text-sm font-semibold transition-colors duration-150 cursor-pointer mt-auto;
+    @apply w-full border-0 rounded-lg py-[11px] text-sm font-semibold transition-colors duration-150 cursor-pointer mt-auto;
     color: var(--white);
     background-color: var(--color-brand);
     box-shadow: 0 2px 8px var(--color-brand-shadow);
@@ -473,7 +473,7 @@
   }
 
   .logo-text {
-    @apply overflow-hidden whitespace-nowrap text-sm font-bold tracking-tight;
+    @apply overflow-hidden whitespace-nowrap text-[15.5px] font-bold tracking-tight;
     color: var(--sidebar-text-color);
     font-family: var(--font-body);
     transition:
@@ -486,12 +486,16 @@
     color: var(--color-brand);
   }
 .collapse-btn {
-  @apply ml-auto hidden shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-1 outline-none shadow-none md:grid;
+  @apply ml-auto hidden h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-1.5 outline-none shadow-none md:grid;
   color: var(--sidebar-icon-color);
   transition:
     background-color 0.15s ease,
     color 0.15s ease,
     transform 0.25s ease;
+}
+
+.collapse-btn svg {
+  @apply h-5 w-5;
 }
 
 .collapse-btn:hover {
@@ -506,9 +510,6 @@
   @apply border-0 outline-none ring-0 shadow-none;
 }
 
-.sidebar.collapsed .collapse-btn {
-  transform: rotate(180deg);
-}
 .sidebar.collapsed .collapse-btn {
   transform: rotate(180deg);
 }
@@ -591,7 +592,7 @@
   }
 
   .credit-card {
-    @apply m-2.5 rounded-lg border-2 p-3;
+    @apply m-2.5 rounded-lg border p-3;
     background: linear-gradient(135deg, #e8faf3 0%, #f0fbf7 100%);
     border-color: var(--teal-mid);
   }
@@ -728,7 +729,7 @@
 
   .theme-toggle,
   .btn-outline {
-    @apply cursor-pointer rounded-lg border-2 bg-transparent px-5 py-2 text-sm font-medium transition-colors;
+    @apply cursor-pointer rounded-lg border bg-transparent px-5 py-2 text-sm font-medium transition-colors;
     border-color: var(--color-border);
     color: var(--color-text-main);
     font-family: var(--font-body);
