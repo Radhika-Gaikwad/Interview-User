@@ -8,6 +8,7 @@ import { Outlet } from "react-router-dom";
 import sessionService from "../Services/sessionService";
 import { uploadToGCS } from "../utils/gcsUpload";
 import { showToast } from "../utils/showToastService";
+
 export default function Layout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -17,8 +18,6 @@ export default function Layout() {
 
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
-
-
 
   /* Prevent body scroll on mobile sidebar */
   useEffect(() => {
@@ -35,41 +34,47 @@ export default function Layout() {
     if (!isCreateOpen && isSessionActive && currentSessionId) {
       const endSession = async () => {
         try {
-          await sessionService.endSession(
-            currentSessionId,
-            new Date().toISOString()
-          );
-        } catch (err) {
-          console.error("Failed to end session:", err);
-        } finally {
-          setIsSessionActive(false);
-          setCurrentSessionId(null);
-         window.dispatchEvent(new Event("session-updated"));
+          await sessionService.endSession(currentSessionId);
+        } catch (error) {
+          console.error("Failed to end session implicitly:", error);
         }
       };
       endSession();
+      setIsSessionActive(false);
+      setCurrentSessionId(null);
     }
   }, [isCreateOpen, isSessionActive, currentSessionId]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden theme-bg">
+    // Unified App Shell based on dashboard.css (--body-bg: #f5f8f7)
+    <div className="flex h-screen w-full overflow-hidden bg-[#f5f8f7] font-['DM_Sans',sans-serif]">
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 md:hidden transition-opacity"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
       <Sidebar
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
 
-      {/* RIGHT SIDE */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Right Side */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         <Navbar
           setIsMobileOpen={setIsMobileOpen}
           isMobileOpen={isMobileOpen}
           openUpload={() => setUploadOpen(true)}
-          openSession={() => setIsCreateOpen(true)}   // ⭐ OPEN NEW MODAL
+          openSession={() => setIsCreateOpen(true)}
         />
 
-        <div className="flex-1 overflow-y-auto px-0.5 py-0.5">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           <Outlet />
-        </div>
+        </main>
       </div>
 
       {/* Upload Resume Modal */}
@@ -78,32 +83,27 @@ export default function Layout() {
         onClose={() => setUploadOpen(false)}
         onUpload={async ({ file, title }) => {
           try {
-
             const response = await uploadToGCS(file, title);
-
-              window.dispatchEvent(new Event("resume-updated"));
+            window.dispatchEvent(new Event("resume-updated"));
             return response;
           } catch (error) {
-           showToast("error", "Upload failed");
+            showToast("error", "Upload failed");
             throw error;
           }
         }}
       />
 
-      {/* ⭐ NEW CREATE SESSION WIZARD */}
+      {/* Create Session Wizard */}
       <CreateSession
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-       onCreated={(session) => {
-         window.dispatchEvent(new Event("session-updated"));
-  if (!session) {
-    console.error("Session is undefined!");
-    return;
-  }
-
-  setCurrentSessionId(session._id || session.id);
-  setIsSessionActive(true);
-}}
+        onCreated={(session) => {
+          window.dispatchEvent(new Event("session-updated"));
+          if (session && session.id) {
+            setCurrentSessionId(session.id);
+            setIsSessionActive(true);
+          }
+        }}
       />
     </div>
   );
