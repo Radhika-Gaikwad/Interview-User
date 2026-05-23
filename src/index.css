@@ -310,7 +310,7 @@
   }
 
   .steps-grid {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16;
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-16;
   }
 
   .step-card {
@@ -592,7 +592,7 @@
   }
 
   .credit-card {
-    @apply m-2.5 rounded-lg border p-3;
+    @apply m-2.5 rounded-lg border-2 p-3;
     background: linear-gradient(135deg, #e8faf3 0%, #f0fbf7 100%);
     border-color: var(--teal-mid);
   }
@@ -729,7 +729,7 @@
 
   .theme-toggle,
   .btn-outline {
-    @apply cursor-pointer rounded-lg border bg-transparent px-5 py-2 text-sm font-medium transition-colors;
+    @apply cursor-pointer rounded-lg border-2 bg-transparent px-5 py-2 text-sm font-medium transition-colors;
     border-color: var(--color-border);
     color: var(--color-text-main);
     font-family: var(--font-body);
