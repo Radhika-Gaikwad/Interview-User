@@ -1760,4 +1760,127 @@
 .ai-table-loader-dot {
   animation: ai-table-loader-dot 1s ease-in-out infinite;
 }
+
+@layer utilities {
+  .live-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #1e2d3d transparent;
+  }
+
+  .live-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .live-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .live-scrollbar::-webkit-scrollbar-thumb {
+    background: #1e2d3d;
+    border-radius: 9999px;
+  }
+
+  .live-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #2b3d50;
+  }
+
+  .live-dot-pulse {
+    animation: liveDotPulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes liveDotPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+@layer utilities {
+  .mock-dark-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #252839 transparent;
+  }
+
+  .mock-dark-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .mock-dark-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .mock-dark-scrollbar::-webkit-scrollbar-thumb {
+    background: #252839;
+    border-radius: 9999px;
+  }
+
+  .mock-dark-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #374151;
+  }
+
+  .mock-pulse-dot {
+    animation: mockPulseDot 1.6s ease-in-out infinite;
+  }
+
+  .mock-timer-colon {
+    animation: mockTimerBlink 1s step-end infinite;
+  }
+
+  .mock-typing-dots span {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background: #14b8a6;
+    animation: mockTypingDot 1.2s ease-in-out infinite;
+  }
+
+  .mock-typing-dots span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .mock-typing-dots span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+
+@keyframes mockPulseDot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes mockTimerBlink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes mockTypingDot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-0.25rem);
+  }
+}
 }

@@ -92,9 +92,9 @@ export default function Navbar({
       <div className="topbar-title">{getPageName()}</div>
 
       <div className="topbar-actions">
-        <button type="button" className="theme-toggle">
+        {/* <button type="button" className="theme-toggle">
           Dark Mode
-        </button>
+        </button> */}
 
         {isResumePage ? (
           <button type="button" className="btn-teal" onClick={openUpload}>
