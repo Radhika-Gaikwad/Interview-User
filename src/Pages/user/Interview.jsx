@@ -736,82 +736,86 @@ export default function InterviewSession() {
     duplicateMutation.mutate(row);
   }
 
-  async function handleConnectActivate({
-    shareAudio,
-    connectionMethod,
-    meetingLink,
-  }) {
-    if (!connectItem) return { session: null, user: null };
-
-    try {
-      const response = await connectMutation.mutateAsync({
-        id: connectItem.id,
-        payload: {
-          shareAudio,
-          connectionMethod,
-          meetingLink,
-          language: connectItem.raw?.language,
-          aiModel: connectItem.raw?.aiModel,
-        },
-      });
-
-      if (!response || !response.session) {
-        console.warn("Connect response missing session, returning safe fallback");
-        return { session: null, user: null };
-      }
-
-      const activatedSession = response.session;
-      const normalizedSession = normalizeSession(activatedSession);
-
-      if (normalizedSession.id) {
-        queryClient.setQueryData(SESSIONS_ALL_QUERY_KEY, (oldSessions = []) => {
-          const safeSessions = Array.isArray(oldSessions) ? oldSessions : [];
-
-          return safeSessions.map((session) =>
-            session.id === normalizedSession.id ? normalizedSession : session
-          );
-        });
-
-        window.dispatchEvent(
-          new CustomEvent("session-updated", {
-            detail: {
-              type: "connected",
-              session: activatedSession,
-            },
-          })
-        );
-      }
-
-      setIsConnectOpen(false);
-      setConnectItem(null);
-
-      const url = meetingLink || getDefaultUrl(connectionMethod);
-
-      if (url) {
-        window.open(url, "_blank");
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["profile"] });
-      refreshSessionsInBackground();
-
-      return { session: response.session, user: null };
-    } catch (error) {
-      console.error("Connect failed:", error);
-
-      const message =
-        error?.response?.data?.message ||
-        error.message ||
-        "Failed to activate interview.";
-
-      showToast(message, "error");
-
-      if (String(message).toLowerCase().includes("insufficient")) {
-        navigate("/buy-credits");
-      }
-
-      return { session: null, user: null };
-    }
+ async function handleConnectActivate({
+  shareAudio,
+  connectionMethod,
+  meetingLink,
+}) {
+  if (!connectItem) {
+    return { blocked: true, reason: "missing-session" };
   }
+
+  try {
+    const response = await connectMutation.mutateAsync({
+      id: connectItem.id,
+      payload: {
+        shareAudio,
+        connectionMethod,
+        meetingLink,
+        language: connectItem.raw?.language,
+        aiModel: connectItem.raw?.aiModel,
+      },
+    });
+
+    if (!response || !response.session) {
+      console.warn("Connect response missing session, returning safe fallback");
+
+      showToast("Unable to start interview session. Please try again.", "error");
+
+      return {
+        blocked: true,
+        reason: "missing-response",
+      };
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["profile"] });
+    refreshSessionsInBackground();
+
+    return {
+      session: response.session,
+      user: response.user || null,
+    };
+  } catch (error) {
+    console.error("Connect failed:", error);
+
+    const rawMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to activate interview.";
+
+    const lowerMessage = String(rawMessage).toLowerCase();
+
+    const isCreditError =
+      lowerMessage.includes("insufficient") ||
+      lowerMessage.includes("credit") ||
+      lowerMessage.includes("not enough") ||
+      lowerMessage.includes("balance");
+
+    const message = isCreditError
+      ? "Please buy credits first to start your interview."
+      : rawMessage;
+
+    showToast(message, "error");
+
+    if (isCreditError) {
+      setTimeout(() => {
+        setIsConnectOpen(false);
+        setConnectItem(null);
+        navigate("/buy-credits");
+      }, 1200);
+
+      return {
+        blocked: true,
+        reason: "credits",
+      };
+    }
+
+    return {
+      blocked: true,
+      reason: "error",
+    };
+  }
+}
 
   function getDefaultUrl(method) {
     switch (method) {

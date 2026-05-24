@@ -96,59 +96,67 @@ export default function ConnectModal({
   const getDefaultUrl = () => selectedPlatform?.url || "/";
 
   const handleActivate = async () => {
-    if (!selectedMethod || activating) return;
+  if (!selectedMethod || activating) return;
 
-    try {
-      setActivating(true);
+  try {
+    setActivating(true);
 
-      let urlToOpen = meetingLink.trim() || getDefaultUrl();
+    let urlToOpen = meetingLink.trim() || getDefaultUrl();
 
-      const response = await onActivate?.({
-        shareAudio,
-        connectionMethod: selectedMethod,
-        meetingLink: meetingLink.trim(),
-      });
+    const response = await onActivate?.({
+      shareAudio,
+      connectionMethod: selectedMethod,
+      meetingLink: meetingLink.trim(),
+    });
 
-      const latestCreditsResponse = await getUserCredits();
-      const latestCredits = normalizeCredits(latestCreditsResponse);
-
-      if (typeof latestCredits === "number") {
-        localStorage.setItem("credits", latestCredits);
-
-        window.dispatchEvent(
-          new CustomEvent("creditsUpdated", {
-            detail: { credits: latestCredits },
-          })
-        );
-      }
-
-      if (response?.data?.meetingUrl) {
-        urlToOpen = response.data.meetingUrl;
-      }
-
-      if (response?.meetingUrl) {
-        urlToOpen = response.meetingUrl;
-      }
-
-      if (response?.session?.meetingUrl) {
-        urlToOpen = response.session.meetingUrl;
-      }
-
-      onClose?.();
-
-      if (urlToOpen) {
-        window.open(urlToOpen, "_blank");
-      }
-    } catch (error) {
-      alert(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to start session"
-      );
-    } finally {
-      setActivating(false);
+    if (response?.blocked) {
+      return;
     }
-  };
+
+    if (!response?.session && !response?.data?.session && !response?.meetingUrl) {
+      return;
+    }
+
+    const latestCreditsResponse = await getUserCredits();
+    const latestCredits = normalizeCredits(latestCreditsResponse);
+
+    if (typeof latestCredits === "number") {
+      localStorage.setItem("credits", latestCredits);
+
+      window.dispatchEvent(
+        new CustomEvent("creditsUpdated", {
+          detail: { credits: latestCredits },
+        })
+      );
+    }
+
+    if (response?.data?.meetingUrl) {
+      urlToOpen = response.data.meetingUrl;
+    }
+
+    if (response?.meetingUrl) {
+      urlToOpen = response.meetingUrl;
+    }
+
+    if (response?.session?.meetingUrl) {
+      urlToOpen = response.session.meetingUrl;
+    }
+
+    if (response?.data?.session?.meetingUrl) {
+      urlToOpen = response.data.session.meetingUrl;
+    }
+
+    onClose?.();
+
+    if (urlToOpen) {
+      window.open(urlToOpen, "_blank");
+    }
+  } catch (error) {
+    console.error("Failed to start session:", error);
+  } finally {
+    setActivating(false);
+  }
+};
 
   if (!isOpen) return null;
 
