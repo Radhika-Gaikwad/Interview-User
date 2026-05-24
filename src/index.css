@@ -1644,4 +1644,120 @@
       @apply w-full justify-center;
     }
   }
+
+  @keyframes ai-table-loader-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ai-table-loader-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 12px 30px rgba(0, 200, 150, 0.22);
+  }
+
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 16px 40px rgba(0, 200, 150, 0.35);
+  }
+}
+
+@keyframes ai-table-loader-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.88);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes ai-table-loader-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes ai-table-loader-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  50% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes ai-table-loader-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.ai-table-loader-orbit {
+  animation: ai-table-loader-orbit 4.5s linear infinite;
+}
+
+.ai-table-loader-pulse {
+  animation: ai-table-loader-pulse 1.8s ease-in-out infinite;
+}
+
+.ai-table-loader-ring {
+  animation: ai-table-loader-ring 1.8s ease-out infinite;
+}
+
+.ai-table-loader-ring-delay {
+  animation: ai-table-loader-ring 1.8s ease-out infinite;
+  animation-delay: 0.45s;
+}
+
+.ai-table-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-table-skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.9),
+    transparent
+  );
+  animation: ai-table-loader-shimmer 1.4s ease-in-out infinite;
+}
+
+.ai-table-loader-progress {
+  width: 45%;
+  animation: ai-table-loader-progress 1.5s ease-in-out infinite;
+}
+
+.ai-table-loader-dot {
+  animation: ai-table-loader-dot 1s ease-in-out infinite;
+}
 }

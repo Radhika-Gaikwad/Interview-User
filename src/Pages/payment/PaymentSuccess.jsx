@@ -183,7 +183,7 @@ const PaymentSuccess = () => {
   }, [location.search, navigate]);
 
   return (
-    <main className="min-h-screen bg-page px-4 py-6 font-body text-main sm:px-6">
+    <main className="h-screen bg-page  font-body text-main">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-5xl items-center justify-center">
         <div className="grid w-full grid-cols-1 overflow-hidden rounded-2xl border border-[var(--session-border)] bg-white shadow-2xl lg:grid-cols-[minmax(0,1fr)_26rem]">
           <section className="relative hidden overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-8 py-10 lg:block">

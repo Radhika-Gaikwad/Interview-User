@@ -19,7 +19,7 @@ const ConfirmPlanModal = ({ plan, onConfirm, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm "
       onClick={onClose}
     >
       <motion.div
@@ -28,7 +28,7 @@ const ConfirmPlanModal = ({ plan, onConfirm, onClose }) => {
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
-        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-lg  rounded-2xl bg-white shadow-2xl h-full overflow-auto"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-plan-title"

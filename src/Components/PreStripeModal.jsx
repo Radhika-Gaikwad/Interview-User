@@ -55,7 +55,7 @@ const PreStripeModal = ({
         exit={{ opacity: 0, scale: 0.95, y: 16 }}
         transition={{ duration: 0.22, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
-        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-lg  rounded-2xl bg-white shadow-2xl h-full overflow-auto"
         role="dialog"
         aria-modal="true"
         aria-labelledby="stripe-modal-title"

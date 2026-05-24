@@ -1,61 +1,40 @@
-import {
-  Brain,
-  Mic,
-  FileText,
-  Sparkles,
-  MessageCircle
-} from "lucide-react";
+import { Sparkles } from "lucide-react";
 
-export default function AILoader({ text = "Loading..." }) {
+export default function AILoader({
+  text = "Loading...",
+  subText = "",
+  fullscreen = false,
+  showText = true,
+}) {
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center">
+    <div
+      className={`${
+        fullscreen ? "fixed" : "absolute"
+      } inset-0 z-40 flex items-center justify-center bg-white/60 px-4 font-body backdrop-blur-[2px]`}
+    >
+      <div className="inline-flex items-center gap-3 rounded-full border border-[var(--session-border)] bg-white/90 px-4 py-3 shadow-lg">
+        <div className="relative grid h-10 w-10 place-items-center">
+          <div className="ai-simple-loader-glow absolute inset-0 rounded-full bg-[var(--color-brand-subtle)]" />
 
-      <div className="flex items-center gap-4   rounded-xl px-6 py-4">
+          <div className="ai-simple-loader-ring absolute inset-0 rounded-full border-2 border-emerald-100 border-t-[var(--color-brand)]" />
 
-        {/* AI Loader */}
-        <div className="relative w-14 h-14 flex items-center justify-center">
-
-          {/* center icon */}
-          <div className="absolute w-9 h-9 rounded-full theme-primary flex items-center justify-center shadow-lg animate-softPulse">
-            <Brain size={16} />
-          </div>
-
-          {/* orbit icons */}
-          <div className="absolute w-full h-full animate-slowSpin">
-
-            <Mic
-              size={14}
-              className="absolute top-0 left-1/2 -translate-x-1/2 text-indigo-600 animate-orbit"
-            />
-
-            <FileText
-              size={14}
-              className="absolute left-0 top-1/2 -translate-y-1/2 text-sky-600 animate-orbit"
-              style={{ animationDelay: "0.6s" }}
-            />
-
-            <Sparkles
-              size={14}
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 text-teal-600 animate-orbit"
-              style={{ animationDelay: "1.2s" }}
-            />
-
-            <MessageCircle
-              size={14}
-              className="absolute right-0 top-1/2 -translate-y-1/2 text-indigo-500 animate-orbit"
-              style={{ animationDelay: "1.8s" }}
-            />
-
+          <div className="relative z-10 grid h-7 w-7 place-items-center rounded-full bg-[var(--color-brand)] text-white shadow-sm">
+            <Sparkles className="h-3.5 w-3.5" />
           </div>
         </div>
 
-        {/* loader text */}
-        <div className="text-sm text-gray-700 font-medium animate-pulse">
-          {text}
-        </div>
+        {showText && (
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-slate-900">{text}</div>
 
+            {subText && (
+              <div className="mt-0.5 max-w-xs truncate text-xs font-medium text-slate-500">
+                {subText}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
     </div>
   );
 }

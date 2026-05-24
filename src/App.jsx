@@ -21,6 +21,8 @@ import Profile from "./Pages/user/Profile";
 import Download from "./Pages/user/Download";
 import InterviewCredits from "./Pages/user/InterviewCredits";
 import PaymentSuccess from "./Pages/payment/PaymentSuccess";
+import MockInterview from "./Pages/user/MockInterview";
+import LiveInterview from "./Pages/user/LiveInterview";
 
 function App() {
   console.log("BUILD:", import.meta.env.VITE_BUILD_ID);
@@ -52,6 +54,8 @@ function App() {
             <Route path="/download" element={<Download />} />
             <Route path="/buy-credits" element={<InterviewCredits />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/mock" element={<MockInterview />} />
+            <Route path="/live-interview" element={<LiveInterview />} />
           </Route>
         </Route>
       </Routes>
