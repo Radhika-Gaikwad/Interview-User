@@ -329,7 +329,7 @@ const PaymentSuccess = () => {
                       className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-brand)] px-4 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[var(--color-brand-hover)]"
                     >
                       <Home className="h-4 w-4" />
-                      Go to Dashboard
+                      Go to Home
                       <ArrowRight className="h-4 w-4" />
                     </button>
 

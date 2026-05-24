@@ -1,5 +1,5 @@
 // InterviewSession.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -370,19 +370,57 @@ export default function InterviewSession() {
     refetchOnWindowFocus: true,
   });
 
-  const refreshSessions = async () => {
+  const refreshSessions = useCallback(async () => {
     const freshSessions = await fetchAllSessions({ forceFresh: true });
 
     queryClient.setQueryData(SESSIONS_ALL_QUERY_KEY, freshSessions);
 
     return freshSessions;
-  };
+  }, [queryClient]);
 
-  const refreshSessionsInBackground = () => {
+  const refreshSessionsInBackground = useCallback(() => {
     refreshSessions().catch((error) => {
       console.error("Failed to refresh sessions:", error);
     });
-  };
+  }, [refreshSessions]);
+
+  useEffect(() => {
+    const handleSessionUpdated = (event) => {
+      const changedSession = event?.detail?.session || null;
+
+      if (changedSession) {
+        const normalizedSession = normalizeSession(changedSession);
+
+        if (normalizedSession.id) {
+          queryClient.setQueryData(SESSIONS_ALL_QUERY_KEY, (oldSessions = []) => {
+            const safeSessions = Array.isArray(oldSessions) ? oldSessions : [];
+            const alreadyExists = safeSessions.some(
+              (session) => session.id === normalizedSession.id
+            );
+
+            if (alreadyExists) {
+              return safeSessions.map((session) =>
+                session.id === normalizedSession.id ? normalizedSession : session
+              );
+            }
+
+            return [normalizedSession, ...safeSessions];
+          });
+
+          setPage(1);
+          return;
+        }
+      }
+
+      refreshSessionsInBackground();
+    };
+
+    window.addEventListener("session-updated", handleSessionUpdated);
+
+    return () => {
+      window.removeEventListener("session-updated", handleSessionUpdated);
+    };
+  }, [queryClient, refreshSessionsInBackground]);
 
   const companies = useMemo(() => {
     return Array.from(
@@ -532,7 +570,17 @@ export default function InterviewSession() {
       }
 
       showToast("Interview duplicated successfully.");
-      window.dispatchEvent(new Event("session-updated"));
+
+      if (createdSession) {
+        window.dispatchEvent(
+          new CustomEvent("session-updated", {
+            detail: {
+              type: "duplicated",
+              session: createdSession,
+            },
+          })
+        );
+      }
     },
 
     onError: (error, _row, context) => {
@@ -710,6 +758,28 @@ export default function InterviewSession() {
       if (!response || !response.session) {
         console.warn("Connect response missing session, returning safe fallback");
         return { session: null, user: null };
+      }
+
+      const activatedSession = response.session;
+      const normalizedSession = normalizeSession(activatedSession);
+
+      if (normalizedSession.id) {
+        queryClient.setQueryData(SESSIONS_ALL_QUERY_KEY, (oldSessions = []) => {
+          const safeSessions = Array.isArray(oldSessions) ? oldSessions : [];
+
+          return safeSessions.map((session) =>
+            session.id === normalizedSession.id ? normalizedSession : session
+          );
+        });
+
+        window.dispatchEvent(
+          new CustomEvent("session-updated", {
+            detail: {
+              type: "connected",
+              session: activatedSession,
+            },
+          })
+        );
       }
 
       setIsConnectOpen(false);

@@ -613,7 +613,7 @@ export default function Resume() {
     <>
       <ResumeToast toast={toast} />
 
-      <div className="content interview-page">
+      <div className="content interview-page resume-page">
         <div className="filter-bar">
           <div className="search-wrap">
             <Search className="search-icon" />

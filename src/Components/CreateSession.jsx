@@ -616,14 +616,27 @@ export default function CreateSession({ open, onClose, onCreated }) {
         throw new Error("Session ID missing from create response");
       }
 
+      const createdSession = {
+        ...session,
+        _id: session?._id || sessionId,
+        id: session?.id || sessionId,
+      };
+
       setForm((prev) => ({
         ...prev,
         _id: sessionId,
         id: sessionId,
       }));
 
-      onCreated?.(session);
-      window.dispatchEvent(new Event("session-updated"));
+      onCreated?.(createdSession);
+      window.dispatchEvent(
+        new CustomEvent("session-updated", {
+          detail: {
+            type: "created",
+            session: createdSession,
+          },
+        })
+      );
 
       showToast("Session created successfully 🎉", "success");
 
@@ -691,6 +704,19 @@ export default function CreateSession({ open, onClose, onCreated }) {
 
       if (response?.session?.meetingUrl) {
         urlToOpen = response.session.meetingUrl;
+      }
+
+      const activatedSession = response?.session || response?.data?.session;
+
+      if (activatedSession) {
+        window.dispatchEvent(
+          new CustomEvent("session-updated", {
+            detail: {
+              type: "connected",
+              session: activatedSession,
+            },
+          })
+        );
       }
 
       showToast("Session activated! 🎉", "success");

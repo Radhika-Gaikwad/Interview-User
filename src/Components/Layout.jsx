@@ -13,7 +13,7 @@ export default function Layout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
 
-  // Single modal state for Create Session
+  // ⭐ NEW single modal state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -26,24 +26,8 @@ export default function Layout() {
     } else {
       document.body.style.overflow = "";
     }
-
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => (document.body.style.overflow = "");
   }, [isMobileOpen]);
-
-  /* Optional fallback: allows any page to open Create Session modal */
-  useEffect(() => {
-    const handleOpenCreateSession = () => {
-      setIsCreateOpen(true);
-    };
-
-    window.addEventListener("open-create-session", handleOpenCreateSession);
-
-    return () => {
-      window.removeEventListener("open-create-session", handleOpenCreateSession);
-    };
-  }, []);
 
   /* Auto end session when modal closes */
   useEffect(() => {
@@ -55,23 +39,16 @@ export default function Layout() {
           console.error("Failed to end session implicitly:", error);
         }
       };
-
       endSession();
       setIsSessionActive(false);
       setCurrentSessionId(null);
     }
   }, [isCreateOpen, isSessionActive, currentSessionId]);
 
-  const openUploadModal = () => {
-    setUploadOpen(true);
-  };
-
-  const openCreateSessionModal = () => {
-    setIsCreateOpen(true);
-  };
-
   return (
+    // Unified App Shell based on dashboard.css (--body-bg: #f5f8f7)
     <div className="flex h-screen w-full overflow-hidden bg-[#f5f8f7] font-['DM_Sans',sans-serif]">
+
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
@@ -91,17 +68,12 @@ export default function Layout() {
         <Navbar
           setIsMobileOpen={setIsMobileOpen}
           isMobileOpen={isMobileOpen}
-          openUpload={openUploadModal}
-          openSession={openCreateSessionModal}
+          openUpload={() => setUploadOpen(true)}
+          openSession={() => setIsCreateOpen(true)}
         />
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          <Outlet
-            context={{
-              openUploadModal,
-              openCreateSessionModal,
-            }}
-          />
+          <Outlet />
         </main>
       </div>
 
@@ -126,10 +98,10 @@ export default function Layout() {
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreated={(session) => {
-          window.dispatchEvent(new Event("session-updated"));
+          const sessionId = session?._id || session?.id;
 
-          if (session && session.id) {
-            setCurrentSessionId(session.id);
+          if (sessionId) {
+            setCurrentSessionId(sessionId);
             setIsSessionActive(true);
           }
         }}
