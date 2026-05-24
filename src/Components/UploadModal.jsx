@@ -1,136 +1,234 @@
-import React, { useState, useEffect } from "react"; 
-import { X } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { FileCheck2, FileText, Upload, X } from "lucide-react";
 import ResumeUploader from "./ResumeUploader";
 import ResumeProcessingLoader from "./ResumeProcessingLoader";
+
+const showUploadSessionToast = (message, type = "success") => {
+  if (typeof document === "undefined") return;
+
+  const oldToast = document.querySelector("[data-upload-session-toast='true']");
+
+  if (oldToast) {
+    oldToast.remove();
+  }
+
+  const toast = document.createElement("div");
+  toast.setAttribute("data-upload-session-toast", "true");
+  toast.className = `session-toast ${type === "error" ? "error" : ""}`;
+
+  const icon = document.createElement("span");
+  icon.className = "session-toast-icon";
+  icon.textContent = type === "error" ? "✕" : "✓";
+
+  const text = document.createElement("span");
+  text.textContent = message;
+
+  toast.appendChild(icon);
+  toast.appendChild(text);
+
+  document.body.appendChild(toast);
+
+  window.setTimeout(() => {
+    toast.remove();
+  }, 2500);
+};
 
 export default function UploadModal({ open, onClose, onUpload }) {
   const [title, setTitle] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [processing, setProcessing] = useState(false);
-const [loaderOpen, setLoaderOpen] = useState(false);
+  const [loaderOpen, setLoaderOpen] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
-  // Reset fields when modal closes
+  const canUpload = useMemo(() => {
+    return Boolean(title.trim() && selectedFile && !processing && !loaderOpen);
+  }, [title, selectedFile, processing, loaderOpen]);
+
   useEffect(() => {
     if (!open) {
       setTitle("");
       setSelectedFile(null);
       setProcessing(false);
+      setLoaderOpen(false);
+      setUploadError("");
     }
   }, [open]);
 
-  if (!open) return null;
+  const handleClose = () => {
+    if (processing || loaderOpen) return;
+    onClose?.();
+  };
 
-const handleUpload = async () => {
-  if (!title.trim() || !selectedFile) return;
+  const handleUpload = async () => {
+    if (!canUpload) return;
 
-  try {
-    setLoaderOpen(true);      // 👈 open loader
-    setProcessing(true);
+    try {
+      setUploadError("");
+      setLoaderOpen(true);
+      setProcessing(true);
 
-    const response = await onUpload({ file: selectedFile, title });
+      const response = await onUpload?.({
+        file: selectedFile,
+        title: title.trim(),
+      });
 
-    if (response?.success) {
-      setProcessing(false);   // 👈 tell loader backend finished
-    } else {
+      const isSuccess = response?.success !== false && response?.error !== true;
+
+      if (!isSuccess) {
+        throw new Error(response?.message || "Upload failed");
+      }
+
+      window.dispatchEvent(new Event("resume-updated"));
+
+      setProcessing(false);
+    } catch (error) {
+      console.error("Resume upload failed:", error);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Upload failed. Please try again.";
+
       setLoaderOpen(false);
       setProcessing(false);
-    }
+      setUploadError(message);
 
-  } catch (err) {
-    setLoaderOpen(false);
-    setProcessing(false);
-  }
-};
+      showUploadSessionToast(message, "error");
+    }
+  };
+
+  if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Modal backdrop */}
+    <div
+      className="edit-modal-overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
       <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-      />
-
-      {/* Modal content */}
-      <div className="relative w-[95%] max-w-2xl bg-white rounded-3xl shadow-2xl max-h-[90vh] flex flex-col z-10">
+        className="edit-modal-box max-w-3xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upload-resume-title"
+      >
         <button
-          className="absolute top-5 right-5 text-gray-400 hover:text-gray-700"
-          onClick={onClose}
+          type="button"
+          onClick={handleClose}
+          disabled={processing || loaderOpen}
+          className="edit-modal-close disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Close upload resume modal"
         >
-          <X size={22} />
+          <X />
         </button>
 
-        {/* Header */}
-        <div className="p-8 pb-4">
-          <h2 className="text-2xl font-bold mb-2">Upload Resume</h2>
-          <p className="text-sm text-gray-500">
-            Upload a new resume to use in sessions and AI interviews.
-          </p>
+        <div className="edit-modal-header">
+          <div className="edit-modal-icon">
+            <Upload />
+          </div>
+
+          <div className="min-w-0">
+            <h2 id="upload-resume-title" className="edit-modal-title">
+              Upload Resume
+            </h2>
+
+            <p className="edit-modal-sub">
+              Upload a resume to use in interview sessions and AI answers.
+            </p>
+          </div>
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-8">
-    <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Resume Title <span className="text-red-500">*</span>
-  </label>
-  <input
-    type="text"
-    placeholder="Enter Resume Title"
-    value={title}
-    onChange={(e) => setTitle(e.target.value)}
-    className="w-full border border-gray-300 rounded-xl p-3 bg-white
-               focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
-               focus:outline-none transition"
-  />
-</div>
+        <div className="edit-body view-modal-scroll">
+          <div className="space-y-5">
+            <div className="edit-info-box">
+              <div className="edit-info-title">Resume Upload</div>
 
-        <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Upload Resume <span className="text-red-500">*</span>
-  </label>
+              <div className="edit-info-desc">
+                Add a clear resume title and upload a PDF, DOC, DOCX, or TXT
+                file. The resume will be processed and saved securely.
+              </div>
+            </div>
 
-  <ResumeUploader
-    allowExisting={false}
-    onSelect={({ file }) => setSelectedFile(file)}
-    height="h-[45vh]"
-  />
-</div>
+            <div className="space-y-1.5">
+              <label className="edit-form-label">
+                <FileText />
+                Resume Title <span className="text-red-500">*</span>
+              </label>
+
+              <input
+                type="text"
+                placeholder="Example: Frontend Developer Resume"
+                value={title}
+                onChange={(event) => {
+                  setTitle(event.target.value);
+                  setUploadError("");
+                }}
+                disabled={processing || loaderOpen}
+                className="edit-form-input disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="edit-form-label">
+                <FileCheck2 />
+                Upload Resume <span className="text-red-500">*</span>
+              </label>
+
+              <ResumeUploader
+                allowExisting={false}
+                onSelect={({ file }) => {
+                  setSelectedFile(file || null);
+                  setUploadError("");
+                }}
+                height="h-96"
+              />
+            </div>
+
+            {uploadError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+                {uploadError}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Footer Buttons */}
-        <div className="p-6 border-t flex justify-end gap-3">
+        <div className="edit-footer">
           <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
+            type="button"
+            onClick={handleClose}
+            disabled={processing || loaderOpen}
+            className="btn-outline disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
 
-        <button
-  onClick={handleUpload}
-  disabled={!title.trim() || !selectedFile}
-  className={`px-6 py-2 rounded-lg text-white font-medium shadow-md transition
-    ${
-      !title.trim() || !selectedFile
-        ? "bg-gray-300 cursor-not-allowed"
-        : "bg-gradient-to-r from-indigo-600 via-sky-500 to-teal-500 hover:from-indigo-700 hover:via-sky-600 hover:to-teal-600"
-    }`}
->
-  Upload Resume
-</button>
+          <button
+            type="button"
+            onClick={handleUpload}
+            disabled={!canUpload}
+            className="btn-teal ml-auto disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Upload />
+            Upload Resume
+          </button>
         </div>
       </div>
 
-<ResumeProcessingLoader
-  open={loaderOpen}          // 👈 separate control
-  processing={processing}
-  onComplete={() => {
-    setLoaderOpen(false);    // close loader
-    setProcessing(false);
-    onClose();               // close upload modal
-  }}
-  successMessage="Resume saved successfully!"
-/>
+      <ResumeProcessingLoader
+        open={loaderOpen}
+        processing={processing}
+        onComplete={() => {
+          setLoaderOpen(false);
+          setProcessing(false);
+
+          showUploadSessionToast("Resume uploaded successfully.");
+
+          onClose?.();
+        }}
+        successMessage="Resume saved successfully!"
+      />
     </div>
   );
 }

@@ -1,208 +1,501 @@
-import React, { useEffect, useRef, useState } from "react";
-import { UploadCloud, CheckCircle } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileCheck2,
+  FileText,
+  Search,
+  Upload,
+  X,
+} from "lucide-react";
 import mammoth from "mammoth/mammoth.browser";
-import { uploadToGCS } from "../utils/gcsUpload";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const RESUME_PAGE_SIZE = 8;
+
+const ACCEPTED_EXTENSIONS = ["pdf", "doc", "docx", "txt"];
+
+const ACCEPTED_FILE_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+];
 
 export default function ResumeUploader({
   resumes = [],
   onSelect,
   allowExisting = true,
-  height = "h-[420px]",
+  height = "h-96",
 }) {
   const fileInputRef = useRef(null);
 
   const [selectedResume, setSelectedResume] = useState(null);
   const [file, setFile] = useState(null);
- const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [mode, setMode] = useState(allowExisting ? "existing" : "upload");
-const [dragActive, setDragActive] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(RESUME_PAGE_SIZE);
 
-const handleFile = async (f) => {
-  setFile(f);
-  setSelectedResume(null);
-  onSelect?.({ file: f, existing: null });
+  const getResumeId = (resume) => String(resume?._id || resume?.id || "");
 
-  if (f.type === "application/pdf") {
-    const url = URL.createObjectURL(f);
-    setPreview({ type: "pdf", url });
-  } 
-  else if (
-    f.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-    f.type === "application/msword"
-  ) {
-    // OPTIONAL: extract text
+  const getResumeTitle = (resume) =>
+    resume?.title || resume?.fileName || resume?.name || "Untitled Resume";
+
+  const getResumePreviewUrl = (resume) =>
+    resume?.previewUrl ||
+    resume?.resumePreviewUrl ||
+    resume?.resumeUrl ||
+    resume?.downloadUrl ||
+    resume?.resumeDownloadUrl ||
+    "";
+
+  const formatResumeMeta = (resume) => {
+    const rawDate = resume?.createdAt || resume?.updatedAt || resume?.uploadedAt;
+
+    if (!rawDate) return "Saved resume";
+
     try {
-      const arrayBuffer = await f.arrayBuffer();
-      const { value: text } = await mammoth.extractRawText({ arrayBuffer });
+      const date =
+        typeof rawDate === "object" && rawDate._seconds
+          ? new Date(rawDate._seconds * 1000)
+          : new Date(rawDate);
 
-      setPreview({
-        type: "doc",
-        text, // optional if you want to show text later
-      });
+      return Number.isNaN(date.getTime())
+        ? "Saved resume"
+        : date.toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
     } catch {
-      setPreview({ type: "doc" });
+      return "Saved resume";
     }
-  } else {
+  };
+
+  const filteredResumes = useMemo(() => {
+    const value = search.trim().toLowerCase();
+
+    if (!value) return resumes;
+
+    return resumes.filter((resume) => {
+      const title = getResumeTitle(resume).toLowerCase();
+      const fileName = String(resume?.fileName || resume?.name || "").toLowerCase();
+
+      return title.includes(value) || fileName.includes(value);
+    });
+  }, [resumes, search]);
+
+  const visibleResumes = useMemo(() => {
+    return filteredResumes.slice(0, visibleCount);
+  }, [filteredResumes, visibleCount]);
+
+  useEffect(() => {
+    setVisibleCount(RESUME_PAGE_SIZE);
+  }, [search, mode]);
+
+  useEffect(() => {
+    setMode(allowExisting ? "existing" : "upload");
+  }, [allowExisting]);
+
+  useEffect(() => {
+    return () => {
+      if (preview?.url) {
+        URL.revokeObjectURL(preview.url);
+      }
+    };
+  }, [preview?.url]);
+
+  const clearFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const resetUploadSelection = () => {
+    if (preview?.url) {
+      URL.revokeObjectURL(preview.url);
+    }
+
+    setFile(null);
     setPreview(null);
-  }
-};
+    setError("");
+    clearFileInput();
+
+    onSelect?.({
+      file: null,
+      existing: null,
+      preview: null,
+    });
+  };
+
+  const validateFile = (selectedFile) => {
+    if (!selectedFile) return false;
+
+    const extension = selectedFile.name.split(".").pop()?.toLowerCase();
+    const isAcceptedExtension = ACCEPTED_EXTENSIONS.includes(extension);
+    const isAcceptedMime = ACCEPTED_FILE_TYPES.includes(selectedFile.type);
+
+    if (!isAcceptedExtension && !isAcceptedMime) {
+      setError("Only PDF, DOC, DOCX, or TXT files are allowed.");
+      return false;
+    }
+
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError("Resume file size must be less than 10MB.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleFile = async (selectedFile) => {
+    if (!validateFile(selectedFile)) return;
+
+    if (preview?.url) {
+      URL.revokeObjectURL(preview.url);
+    }
+
+    setError("");
+    setFile(selectedFile);
+    setSelectedResume(null);
+
+    onSelect?.({
+      file: selectedFile,
+      existing: null,
+      preview: null,
+    });
+
+    if (selectedFile.type === "application/pdf") {
+      const url = URL.createObjectURL(selectedFile);
+      setPreview({ type: "pdf", url });
+      return;
+    }
+
+    const extension = selectedFile.name.split(".").pop()?.toLowerCase();
+
+    if (extension === "txt" || selectedFile.type === "text/plain") {
+      try {
+        const text = await selectedFile.text();
+        setPreview({ type: "text", text });
+      } catch {
+        setPreview({ type: "text", text: "" });
+      }
+
+      return;
+    }
+
+    if (
+      selectedFile.type ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      selectedFile.type === "application/msword" ||
+      extension === "doc" ||
+      extension === "docx"
+    ) {
+      try {
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const { value: text } = await mammoth.extractRawText({ arrayBuffer });
+
+        setPreview({
+          type: "doc",
+          text,
+        });
+      } catch {
+        setPreview({
+          type: "doc",
+          text: "",
+        });
+      }
+
+      return;
+    }
+
+    setPreview(null);
+  };
 
   const selectExisting = (resume) => {
+    const previewUrl = getResumePreviewUrl(resume);
+
     setSelectedResume(resume);
     setFile(null);
-    setPreview("");
+    setPreview(null);
+    setError("");
+    clearFileInput();
 
-    onSelect?.({ file: null, existing: resume });
+    onSelect?.({
+      file: null,
+      existing: resume,
+      preview: previewUrl,
+    });
   };
 
   return (
     <div className="space-y-4">
-      {/* Toggle */}
       {allowExisting && (
-        <div className="flex gap-2">
+        <div className="edit-resume-tabs">
           <button
-            onClick={() => setMode("existing")}
-            className={`px-4 py-2 rounded-lg border ${
-              mode === "existing" ? "bg-gray-100 font-semibold" : ""
-            }`}
+            type="button"
+            onClick={() => {
+              resetUploadSelection();
+              setSelectedResume(null);
+              setMode("existing");
+            }}
+            className={`edit-resume-tab ${mode === "existing" ? "active" : ""}`}
           >
-            Existing
+            Select Existing
           </button>
 
           <button
-            onClick={() => setMode("upload")}
-            className={`px-4 py-2 rounded-lg border ${
-              mode === "upload" ? "bg-gray-100 font-semibold" : ""
-            }`}
+            type="button"
+            onClick={() => {
+              setSelectedResume(null);
+              setMode("upload");
+            }}
+            className={`edit-resume-tab ${mode === "upload" ? "active" : ""}`}
           >
-            Upload New
+            Upload Resume
           </button>
         </div>
       )}
 
-      {/* ----------------------------- */}
-      {/* EXISTING RESUMES              */}
-      {/* ----------------------------- */}
       {mode === "existing" && allowExisting && (
-        <div className="grid gap-2 max-h-40 overflow-auto">
-          {resumes.length === 0 && (
-            <div className="text-sm text-gray-500 border border-dashed p-3 rounded-lg">
-              No saved resumes
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="edit-section-title">Saved Resumes</p>
+              <p className="edit-helper-text">
+                Showing {Math.min(visibleCount, filteredResumes.length)} of{" "}
+                {filteredResumes.length} resumes
+              </p>
+            </div>
+
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+              <input
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search resume..."
+                className="edit-form-input py-2 pl-9 pr-3"
+              />
+            </div>
+          </div>
+
+          {selectedResume && (
+            <div className="mb-3 flex items-center gap-3 rounded-xl border bg-[var(--color-brand-subtle)] p-3">
+              <div className="edit-resume-file-icon">
+                <CheckCircle2 />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="edit-resume-name">
+                  Selected: {getResumeTitle(selectedResume)}
+                </div>
+                <div className="edit-resume-meta">
+                  {formatResumeMeta(selectedResume)}
+                </div>
+              </div>
             </div>
           )}
 
-          {resumes.map((r) => (
-            <div
-              key={r._id}
-              onClick={() => selectExisting(r)}
-              className={`p-3 border rounded-lg cursor-pointer flex justify-between items-center hover:bg-gray-50 ${
-                selectedResume?._id === r._id
-                  ? "border-indigo-500"
-                  : ""
-              }`}
-            >
-              <div>
-                <div className="font-medium">{r.title}</div>
-                <div className="text-xs text-gray-500 break-all">
-                  {r.previewUrl}
-                </div>
+          {resumes.length === 0 ? (
+            <div className="edit-empty-box">
+              No saved resumes found. You can upload a new resume instead.
+            </div>
+          ) : filteredResumes.length === 0 ? (
+            <div className="edit-empty-box">No resumes found for “{search}”.</div>
+          ) : (
+            <>
+              <div className="view-modal-scroll max-h-80 space-y-2 overflow-y-auto pr-1">
+                {visibleResumes.map((resume, index) => {
+                  const id = getResumeId(resume) || `${getResumeTitle(resume)}-${index}`;
+                  const isSelected = getResumeId(selectedResume) === getResumeId(resume);
+
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => selectExisting(resume)}
+                      className={`edit-resume-card text-left ${
+                        isSelected ? "active" : ""
+                      }`}
+                    >
+                      <div className="edit-resume-file-icon">
+                        <FileText />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="edit-resume-name">
+                          {getResumeTitle(resume)}
+                        </div>
+                        <div className="edit-resume-meta">
+                          {formatResumeMeta(resume)}
+                        </div>
+                      </div>
+
+                      {isSelected && (
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-brand" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
-              {selectedResume?._id === r._id && (
-                <CheckCircle className="text-indigo-600" size={18} />
+              {visibleCount < filteredResumes.length && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCount((current) => current + RESUME_PAGE_SIZE)
+                  }
+                  className="mt-3 w-full rounded-lg border-2 bg-white px-4 py-2 text-sm font-semibold transition-colors hover:border-[var(--color-brand)] hover:text-brand"
+                >
+                  Show more resumes
+                </button>
               )}
-            </div>
-          ))}
+            </>
+          )}
         </div>
       )}
 
- {mode === "upload" && (
-  <div
-    onClick={() => fileInputRef.current.click()}
-    onDragOver={(e) => {
-      e.preventDefault();
-      setDragActive(true);
-    }}
-    onDragLeave={(e) => {
-      e.preventDefault();
-      setDragActive(false);
-    }}
-    onDrop={(e) => {
-      e.preventDefault();
-      setDragActive(false);
+      {mode === "upload" && (
+        <div className="space-y-3">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                fileInputRef.current?.click();
+              }
+            }}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setDragActive(true);
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragActive(true);
+            }}
+            onDragLeave={(event) => {
+              event.preventDefault();
+              setDragActive(false);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragActive(false);
+              handleFile(event.dataTransfer.files?.[0]);
+            }}
+            className={`edit-dropzone ${dragActive ? "active" : ""}`}
+          >
+            <Upload />
 
-      const droppedFile = e.dataTransfer.files?.[0];
-      if (droppedFile) {
-        handleFile(droppedFile);
-      }
-    }}
-    className={`
-      border-2 border-dashed rounded-2xl p-8 text-center
-      cursor-pointer transition-all duration-200
-      ${dragActive 
-        ? "border-indigo-600 bg-indigo-100 scale-[1.02]" 
-        : "border-indigo-400 hover:bg-indigo-50"}
-    `}
-  >
-    <UploadCloud size={40} className="mx-auto text-indigo-500" />
+            <div>
+              <div className="edit-dropzone-title">
+                {file ? file.name : "Drop your resume here"}
+              </div>
+              <div className="edit-dropzone-sub">
+                PDF, DOC, DOCX, or TXT • Max 10MB
+              </div>
+            </div>
 
-    <p className="mt-2 font-medium text-gray-700">
-      Click or drag resume here
-    </p>
+            <span className="edit-dropzone-btn">Browse files</span>
 
-    <p className="text-xs text-gray-500">
-      PDF, DOC, DOCX (max 5MB)
-    </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.txt"
+              className="hidden"
+              onChange={(event) => handleFile(event.target.files?.[0])}
+            />
+          </div>
 
-    <input
-      ref={fileInputRef}
-      type="file"
-      accept=".pdf,.doc,.docx"
-      className="hidden"
-      onChange={(e) => handleFile(e.target.files[0])}
-    />
-  </div>
-)}
-{(preview || selectedResume?.previewUrl) && (
-  <div className="border rounded-xl overflow-hidden shadow-sm">
-    <div className="bg-gray-50 px-3 py-2 text-xs text-gray-600">
-      Preview
-    </div>
+          {file && (
+            <div className="edit-uploaded-file">
+              <FileCheck2 />
+              <span className="truncate">{file.name}</span>
 
-    <div className="w-full p-6 text-center overflow-auto">
-      
-      {/* DOC/DOCX */}
-      {preview?.type === "doc" && (
-        <>
-          <p className="font-medium text-gray-700">
-            DOC/DOCX preview is not supported in browser.
-          </p>
-          <p className="text-sm mt-1 text-gray-500">
-            Please upload PDF for preview.
-          </p>
-        </>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  resetUploadSelection();
+                }}
+                aria-label="Remove selected resume"
+              >
+                <X />
+              </button>
+            </div>
+          )}
+
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
       )}
 
-      {/* PDF */}
-      {preview?.type === "pdf" && (
-        <iframe
-          title="resume-preview"
-          src={preview.url}
-          className="w-full h-[65vh] border-0"
-        />
-      )}
+      {(preview || selectedResume) && (
+        <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-slate-900">Preview</p>
+              <p className="text-xs text-slate-500">
+                {file
+                  ? file.name
+                  : selectedResume
+                    ? getResumeTitle(selectedResume)
+                    : "Resume preview"}
+              </p>
+            </div>
 
-      {/* EXISTING RESUME */}
-      {!preview && selectedResume?.previewUrl && (
-        <iframe
-          title="resume-preview"
-          src={selectedResume.previewUrl}
-          className="w-full h-[65vh] border-0"
-        />
+            <FileText className="h-5 w-5 text-brand" />
+          </div>
+
+          <div className="view-modal-scroll max-h-[60vh] overflow-y-auto p-4">
+            {preview?.type === "pdf" && (
+              <iframe
+                title="resume-preview"
+                src={preview.url}
+                className={`w-full rounded-xl border bg-slate-50 ${height}`}
+              />
+            )}
+
+            {(preview?.type === "doc" || preview?.type === "text") && (
+              <div className={`view-modal-scroll overflow-y-auto rounded-xl border bg-slate-50 p-4 text-left text-sm leading-relaxed text-slate-700 ${height}`}>
+                {preview.text ? (
+                  <pre className="whitespace-pre-wrap break-words font-sans">
+                    {preview.text}
+                  </pre>
+                ) : (
+                  <div className="edit-empty-box">
+                    Browser preview is not available for this file. The selected file
+                    can still be uploaded.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!preview && selectedResume && getResumePreviewUrl(selectedResume) && (
+              <iframe
+                title="resume-preview"
+                src={getResumePreviewUrl(selectedResume)}
+                className={`w-full rounded-xl border bg-slate-50 ${height}`}
+              />
+            )}
+
+            {!preview && selectedResume && !getResumePreviewUrl(selectedResume) && (
+              <div className="edit-empty-box">
+                Preview is not available for this saved resume.
+              </div>
+            )}
+          </div>
+        </div>
       )}
-    </div>
-  </div>
-)}
     </div>
   );
 }
