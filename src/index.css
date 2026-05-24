@@ -334,6 +334,12 @@
     font-family: var(--font-body);
   }
 
+  .hero-subtitle {
+    @apply mt-1 max-w-xl text-sm leading-relaxed text-center;
+    color: var(--color-text-muted);
+    font-family: var(--font-body);
+  }
+
   .steps-grid {
     @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-16;
   }
@@ -1883,4 +1889,66 @@
     transform: translateY(-0.25rem);
   }
 }
+
+.payment-success-card {
+    @apply mb-6 flex flex-col gap-4 rounded-2xl border bg-white px-5 py-4 shadow-lg md:flex-row md:items-center md:justify-between;
+    border-color: var(--teal-mid);
+    animation: paymentSuccessIn 0.45s ease-out both;
+  }
+
+  .payment-success-left {
+    @apply flex items-start gap-3;
+  }
+
+  .payment-success-icon {
+    @apply grid h-11 w-11 shrink-0 place-items-center rounded-xl text-white;
+    background-color: var(--color-brand);
+    box-shadow: 0 8px 22px var(--color-brand-shadow);
+    animation: paymentSuccessPulse 1.8s ease-in-out infinite;
+  }
+
+  .payment-success-icon-svg {
+    @apply h-6 w-6;
+  }
+
+  .payment-success-title {
+    @apply text-base font-bold;
+    color: var(--color-text-main);
+    font-family: var(--font-body);
+  }
+
+  .payment-success-text {
+    @apply mt-1 text-sm leading-relaxed;
+    color: var(--color-text-muted);
+  }
+
+  .payment-success-action {
+    @apply w-full md:w-auto md:px-5;
+  }
+}
+
+@keyframes paymentSuccessIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes paymentSuccessPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 22px var(--color-brand-shadow);
+  }
+
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 12px 30px var(--color-brand-shadow);
+  }
+
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
 const CompletedTag = () => (
   <div className="completed-tag">
@@ -12,6 +12,7 @@ const StepBadge = ({ children, className = "" }) => (
     {children}
   </div>
 );
+
 const IconBox = ({ children }) => (
   <div className="icon-box">
     {children}
@@ -222,13 +223,129 @@ const HeroIcon = () => (
   </svg>
 );
 
+const SuccessIcon = () => (
+  <svg
+    className="payment-success-icon-svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+);
+
+const getIndianGreeting = () => {
+  const hourPart = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "numeric",
+    hour12: false,
+  })
+    .formatToParts(new Date())
+    .find((part) => part.type === "hour")?.value;
+
+  const hour = Number(hourPart) === 24 ? 0 : Number(hourPart);
+
+  if (hour >= 5 && hour < 12) {
+    return {
+      title: "Good Morning",
+      message: "Start your day with focused interview practice.",
+    };
+  }
+
+  if (hour >= 12 && hour < 17) {
+    return {
+      title: "Good Afternoon",
+      message: "Keep your preparation momentum strong today.",
+    };
+  }
+
+  if (hour >= 17 && hour < 22) {
+    return {
+      title: "Good Evening",
+      message: "A calm practice session can improve your confidence.",
+    };
+  }
+
+  return {
+    title: "Good Night",
+    message: "It is late in India. You can do a light practice session or continue tomorrow with a fresh mind.",
+  };
+};
+
+const isPaymentSuccess = (location) => {
+  const state = location?.state || {};
+  const params = new URLSearchParams(location.search);
+
+  const status =
+    params.get("payment") ||
+    params.get("status") ||
+    params.get("paymentStatus");
+
+  const paymentSuccessParam = params.get("paymentSuccess");
+  const successParam = params.get("success");
+
+  return (
+    state.paymentSuccess === true ||
+    state.paymentStatus === "success" ||
+    status === "success" ||
+    status === "paid" ||
+    status === "completed" ||
+    paymentSuccessParam === "true" ||
+    successParam === "true"
+  );
+};
+
+const PaymentSuccessBanner = ({ onStartInterview }) => (
+  <div className="payment-success-card animate-fadeInUp">
+    <div className="payment-success-left">
+      <div className="payment-success-icon">
+        <SuccessIcon />
+      </div>
+
+      <div>
+        <h2 className="payment-success-title">
+          Payment successful! Your credits are ready.
+        </h2>
+
+        <p className="payment-success-text">
+          You can now start your interview session. We have highlighted the next recommended step for you.
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      className="primary-btn payment-success-action"
+      onClick={onStartInterview}
+    >
+      Start Interview
+    </button>
+  </div>
+);
+
 const Home = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const outletContext = useOutletContext();
 
   const [completedSteps, setCompletedSteps] = useState([]);
   const [ctaStep, setCtaStep] = useState(null);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+
+  const greeting = getIndianGreeting();
+
+  const userName =
+    localStorage.getItem("userName") ||
+    localStorage.getItem("name") ||
+    localStorage.getItem("fullName") ||
+    "Radhika";
 
   useEffect(() => {
+    const paymentSuccess = isPaymentSuccess(location);
+
     if (location?.state) {
       setCompletedSteps(location.state.completedSteps || []);
       setCtaStep(location.state.ctaStep || null);
@@ -242,18 +359,54 @@ const Home = () => {
         }, 250);
       }
     }
-  }, [location.state]);
 
-  const userName = "Radhika";
+    if (paymentSuccess) {
+      setShowPaymentSuccess(true);
 
-  const handleUploadResume = () => console.log("Upload Resume");
-  const handleTrial = () => console.log("Start Trial");
-  const handleBuyCredits = () => console.log("Buy Credits");
-  const handleStartInterview = () => console.log("Start Interview");
+      setCompletedSteps((prev) => {
+        const currentSteps = location.state?.completedSteps || prev;
+        return Array.from(new Set([...currentSteps, 2]));
+      });
+
+      setCtaStep(3);
+
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }, 150);
+    }
+  }, [location]);
+
+  const handleUploadResume = () => {
+    navigate("/resume");
+  };
+
+  const handleTrial = () => {
+    if (outletContext?.openCreateSessionModal) {
+      outletContext.openCreateSessionModal();
+      return;
+    }
+
+    window.dispatchEvent(new Event("open-create-session"));
+  };
+
+  const handleBuyCredits = () => {
+    navigate("/buy-credits");
+  };
+
+  const handleStartInterview = () => {
+    navigate("/interview");
+  };
 
   return (
     <div className="app-shell">
       <div className="page-container">
+        {showPaymentSuccess && (
+          <PaymentSuccessBanner onStartInterview={handleStartInterview} />
+        )}
+
         {/* ═══ HERO GREETING ═══ */}
         <div className="hero-section">
           <div className="shrink-0">
@@ -261,22 +414,26 @@ const Home = () => {
           </div>
 
           <h1 className="hero-title">
-            Morning, {userName}
+            {greeting.title}, {userName}
           </h1>
+
+          <p className="hero-subtitle">
+            {greeting.message}
+          </p>
         </div>
 
         {/* ═══ STEPS GRID ═══ */}
         <div className="steps-grid">
-         <StepCard
-  badge="Optional   Resume"
-  badgeClassName="badge-optional"
-  icon={<UploadIcon />}
-  description="Upload your resume to generate custom answers for job interview questions."
-  buttonText="Upload Resume"
-  onButtonClick={handleUploadResume}
-  completed={completedSteps.includes(0)}
-  animationClass="animate-fadeSlide"
-/>
+          <StepCard
+            badge="Optional   Resume"
+            badgeClassName="badge-optional"
+            icon={<UploadIcon />}
+            description="Upload your resume to generate custom answers for job interview questions."
+            buttonText="Upload Resume"
+            onButtonClick={handleUploadResume}
+            completed={completedSteps.includes(0)}
+            animationClass="animate-fadeSlide"
+          />
 
           <StepCard
             badge="Step 1   Trial Session"

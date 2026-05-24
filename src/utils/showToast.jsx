@@ -1,48 +1,79 @@
 import React, { useEffect } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Sparkles,
+  X,
+  XCircle,
+} from "lucide-react";
 
 const toastStyles = {
   success: {
-    bg: "theme-primary",
-    icon: "🎉",
+    label: "Success",
+    Icon: CheckCircle2,
+    className: "success",
   },
   error: {
-    bg: "bg-gradient-to-r from-rose-500 via-red-500 to-orange-500",
-    icon: "❌",
+    label: "Error",
+    Icon: XCircle,
+    className: "error",
   },
   info: {
-    bg: "bg-gradient-to-r from-sky-500 to-indigo-500",
-    icon: "ℹ️",
+    label: "Info",
+    Icon: Info,
+    className: "info",
+  },
+  warning: {
+    label: "Warning",
+    Icon: AlertTriangle,
+    className: "warning",
   },
 };
 
 const Toast = ({ id, message, type = "info", onClose }) => {
-  const config = toastStyles[type];
+  const config = toastStyles[type] || toastStyles.info;
+  const ToastIcon = config.Icon;
 
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose(id);
-    }, 2500);
+    }, 2800);
 
     return () => clearTimeout(timer);
   }, [id, onClose]);
 
   return (
     <div
-      className={`relative flex items-center gap-4 px-6 py-2 rounded-2xl shadow-2xl
-      ${config.bg} text-white overflow-hidden animate-popup`}
+      className={`app-toast ${config.className}`}
+      role="status"
+      aria-live="polite"
     >
-      {/* Glow */}
-      <div className="absolute inset-0 opacity-30 blur-2xl bg-gradient-to-r from-indigo-500 via-sky-400 to-teal-400"></div>
+      <span className="app-toast-glow" />
 
-      {/* Icon */}
-      <div className="relative z-10 w-10 h-10 flex items-center justify-center bg-white/20 rounded-full">
-        {config.icon}
+      <div className="app-toast-icon">
+        <ToastIcon className="h-5 w-5" />
       </div>
 
-      {/* Text */}
-      <div className="relative z-10 font-semibold">
-        {message}
+      <div className="app-toast-content">
+        <div className="app-toast-label">
+          <Sparkles className="h-3 w-3" />
+          {config.label}
+        </div>
+
+        <div className="app-toast-message">{message}</div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => onClose(id)}
+        className="app-toast-close"
+        aria-label="Close toast"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <span className="app-toast-progress" />
     </div>
   );
 };
