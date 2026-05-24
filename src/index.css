@@ -65,6 +65,20 @@
   --color-danger-hover: #ff5555;
   --color-danger-subtle: rgba(255, 50, 50, 0.08);
   --color-credit-button-border: #c2eedd;
+
+   --session-card-bg: #ffffff;
+  --session-text-dark: var(--color-text-main);
+  --session-text-mid: var(--color-text-muted);
+  --session-text-light: #8fa3ae;
+  --session-border: var(--color-border);
+  --session-shadow: 0 2px 16px rgba(0, 180, 130, 0.07);
+  --session-shadow-hover: 0 8px 32px rgba(0, 180, 130, 0.13);
+  --session-radius: 0.875rem;
+  --session-radius-sm: 0.5rem;
+  --session-danger: var(--color-danger);
+  --session-danger-hover: #c94444;
+  --session-danger-bg: #fef0f0;
+  --session-danger-border: #fac7c7;
 }
 
 /* ─────────────────────────────────────────
@@ -296,7 +310,7 @@
   }
 
   .hero-section {
-    @apply flex flex-col items-center justify-center text-center gap-4 mb-12 animate-fadeIn;
+    @apply flex flex-col items-center justify-center text-center gap-2 mb-6 animate-fadeIn;
   }
 
   .hero-svg {
@@ -727,20 +741,29 @@
     transform: translateY(-6px) rotate(-45deg);
   }
 
-  .theme-toggle,
-  .btn-outline {
-    @apply cursor-pointer rounded-lg border-2 bg-transparent px-5 py-2 text-sm font-medium transition-colors;
-    border-color: var(--color-border);
-    color: var(--color-text-main);
-    font-family: var(--font-body);
-  }
+.theme-toggle {
+  @apply cursor-pointer rounded-lg border-2 bg-transparent px-5 py-2 text-sm font-medium transition-colors;
+  border-color: var(--color-border);
+  color: var(--color-text-main);
+  font-family: var(--font-body);
+}
 
-  .theme-toggle:hover,
-  .btn-outline:hover {
-    border-color: var(--color-brand);
-    color: var(--color-brand);
-  }
+.btn-outline {
+  @apply inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border-2 bg-transparent px-5 py-2 text-sm font-medium transition-colors;
+  border-color: var(--color-border);
+  color: var(--color-text-main);
+  font-family: var(--font-body);
+}
 
+.btn-outline svg {
+  @apply h-4 w-4 shrink-0;
+}
+
+.theme-toggle:hover,
+.btn-outline:hover {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
   .btn-dark {
     @apply inline-flex cursor-pointer items-center gap-1 rounded-lg border-0 px-5 py-2 text-sm font-semibold text-white transition-colors;
     background-color: var(--color-text-main);
@@ -780,6 +803,767 @@
 
     .topbar-title {
       @apply text-base;
+    }
+  }
+
+   .content {
+    @apply flex-1;
+  }
+
+  .interview-page {
+    @apply flex flex-col animate-fadeInUp;
+    font-family: var(--font-body);
+  }
+
+  .filter-bar {
+    @apply mb-5 flex flex-wrap items-center gap-2.5;
+  }
+
+  .search-wrap {
+    @apply relative min-w-48 flex-1 md:max-w-sm;
+  }
+
+  .search-icon {
+    @apply pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2;
+    color: var(--session-text-light);
+  }
+
+  .search-input {
+    @apply w-full rounded-lg border-2 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-colors;
+    border-color: var(--session-border);
+    color: var(--session-text-dark);
+    font-family: var(--font-body);
+  }
+
+  .search-input::placeholder {
+    color: var(--session-text-light);
+  }
+
+  .search-input:focus {
+    border-color: var(--color-brand);
+  }
+
+  .select-wrap {
+    @apply relative;
+  }
+
+  .select-chevron {
+    @apply pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2;
+    color: var(--session-text-light);
+  }
+
+  .filter-select {
+    @apply cursor-pointer appearance-none rounded-lg border-2 bg-white py-2 pl-3 pr-8 text-sm outline-none transition-colors;
+    border-color: var(--session-border);
+    color: var(--session-text-dark);
+    font-family: var(--font-body);
+  }
+
+  .filter-select:focus {
+    border-color: var(--color-brand);
+  }
+
+  .sort-btn {
+    @apply flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg border-2 bg-white px-3 py-2 text-sm transition-colors;
+    border-color: var(--session-border);
+    color: var(--session-text-dark);
+    font-family: var(--font-body);
+  }
+
+  .sort-btn:hover {
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+  }
+
+  .sort-btn svg {
+    @apply h-3.5 w-3.5;
+    color: var(--session-text-light);
+  }
+
+  .table-card {
+    @apply overflow-x-auto rounded-2xl border bg-white;
+    border-color: var(--session-border);
+    box-shadow: var(--session-shadow);
+  }
+
+  .session-table {
+    @apply w-full min-w-max border-collapse;
+  }
+
+  .session-table thead tr {
+    border-bottom: 1px solid var(--session-border);
+  }
+
+  .session-table th {
+    @apply whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider;
+    color: var(--session-text-light);
+    font-family: var(--font-body);
+  }
+
+  .session-table tbody tr {
+    border-bottom: 1px solid var(--session-border);
+    transition: background-color 0.15s ease;
+  }
+
+  .session-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .session-table tbody tr:hover {
+    background-color: #f9fcfb;
+  }
+
+  .session-table td {
+    @apply whitespace-nowrap px-4 py-3.5 text-sm align-middle;
+    color: var(--session-text-dark);
+    font-family: var(--font-body);
+  }
+
+  .col-sno {
+    @apply w-14 font-medium;
+    color: var(--session-text-light);
+  }
+
+  .col-company {
+    @apply font-semibold;
+    color: var(--session-text-dark);
+  }
+
+  .col-pos,
+  .col-date,
+  .col-usage {
+    color: var(--session-text-mid);
+  }
+
+  .status-cell {
+    @apply flex items-center gap-2 whitespace-nowrap;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold;
+  }
+
+  .badge::before {
+    @apply h-1.5 w-1.5 shrink-0 rounded-full;
+    content: "";
+  }
+
+  .badge-active {
+    background-color: var(--color-brand-subtle);
+    color: var(--color-brand-hover);
+  }
+
+  .badge-active::before {
+    background-color: var(--color-brand);
+  }
+
+  .badge-expired {
+    background-color: var(--session-danger-bg);
+    color: var(--session-danger-hover);
+  }
+
+  .badge-expired::before {
+    background-color: var(--session-danger);
+  }
+
+  .credits-txt {
+    @apply text-xs;
+    color: var(--session-text-mid);
+  }
+
+  .action-cell {
+    @apply flex items-center gap-2;
+  }
+
+  .action-btn {
+    @apply grid h-8 w-8 cursor-pointer place-items-center rounded-lg border-2 bg-transparent transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    border-color: var(--session-border);
+  }
+
+  .action-btn svg {
+    @apply h-4 w-4;
+    color: var(--session-text-mid);
+  }
+
+  .action-btn:hover {
+    background-color: var(--color-brand-subtle);
+    border-color: var(--teal-mid);
+  }
+
+  .action-btn:hover svg {
+    color: var(--color-brand-hover);
+  }
+
+  .action-btn.del:hover {
+    background-color: var(--session-danger-bg);
+    border-color: var(--session-danger-border);
+  }
+
+  .action-btn.del:hover svg {
+    color: var(--session-danger);
+  }
+
+  .empty-table-cell {
+    @apply py-10 text-center text-sm;
+    color: var(--session-text-mid);
+  }
+
+  .table-footer {
+    @apply flex flex-col items-center justify-between gap-3 border-t px-4 py-3 md:flex-row;
+    border-color: var(--session-border);
+  }
+
+  .showing-text {
+    @apply text-xs;
+    color: var(--session-text-light);
+  }
+
+  .pagination {
+    @apply flex flex-wrap items-center gap-1.5;
+  }
+
+  .page-btn {
+    @apply grid min-h-8 min-w-8 cursor-pointer place-items-center rounded-lg border-2 bg-transparent px-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40;
+    border-color: var(--session-border);
+    color: var(--session-text-mid);
+    font-family: var(--font-body);
+  }
+
+  .page-btn:hover:not(:disabled) {
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+  }
+
+  .page-btn.active {
+    background-color: var(--color-brand);
+    border-color: var(--color-brand);
+    color: var(--white);
+    font-weight: 700;
+  }
+
+  .confirm-modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  }
+
+  .confirm-modal-backdrop {
+    @apply absolute inset-0 bg-black/40 backdrop-blur-sm;
+  }
+
+  .confirm-modal-box {
+    @apply relative z-10 w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl;
+  }
+
+  .confirm-modal-header {
+    @apply mb-4 flex items-center justify-between;
+  }
+
+  .confirm-modal-title {
+    @apply text-lg font-semibold;
+    color: var(--session-text-dark);
+    font-family: var(--font-body);
+  }
+
+  .confirm-close-btn {
+    @apply cursor-pointer border-0 bg-transparent text-sm transition-colors;
+    color: var(--session-text-mid);
+  }
+
+  .confirm-close-btn:hover {
+    color: var(--session-text-dark);
+  }
+
+  .confirm-message {
+    @apply mb-4 text-sm;
+    color: var(--session-text-mid);
+  }
+
+  .confirm-actions {
+    @apply flex justify-end gap-2;
+  }
+
+  .btn-cancel-soft {
+    @apply cursor-pointer rounded-lg border-2 bg-transparent px-5 py-2 text-sm font-semibold transition-colors;
+    border-color: var(--session-border);
+    color: var(--session-text-dark);
+    font-family: var(--font-body);
+  }
+
+  .btn-cancel-soft:hover {
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+  }
+
+  .btn-confirm-danger {
+    @apply cursor-pointer rounded-lg border-0 px-5 py-2 text-sm font-semibold text-white transition-colors;
+    background-color: var(--session-danger);
+    font-family: var(--font-body);
+  }
+
+  .btn-confirm-danger:hover {
+    background-color: var(--session-danger-hover);
+  }
+ .session-refresh-text {
+    @apply mb-2 text-xs font-medium;
+    color: var(--color-text-muted);
+  }
+
+  .session-toast {
+    @apply fixed right-5 top-20 z-[999999] flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-xl;
+    background-color: var(--color-brand);
+    animation: sessionToastIn 0.25s ease both;
+  }
+
+  .session-toast.error {
+    background-color: var(--color-danger);
+  }
+
+  .session-toast-icon {
+    @apply grid h-5 w-5 place-items-center rounded-full bg-white/20 text-xs font-bold;
+  }
+
+  /* ─────────────────────────────────────────
+   EDIT SESSION MODAL
+───────────────────────────────────────── */
+.edit-modal-overlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/40 p-4 backdrop-blur-sm;
+}
+.edit-modal-box {
+  @apply relative flex h-[calc(100vh-2rem)] max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-fadeIn;
+  font-family: var(--font-body);
+}
+.edit-modal-close {
+  @apply absolute right-4 top-4 z-30 grid h-7 w-7 cursor-pointer place-items-center rounded-md border-0 bg-transparent transition-colors;
+  color: var(--session-text-light);
+}
+
+.edit-modal-close:hover {
+  color: var(--session-text-dark);
+}
+
+.edit-modal-close svg {
+  @apply h-5 w-5;
+}
+
+.edit-modal-header {
+  @apply relative z-20 flex shrink-0 items-start gap-3 bg-white px-6 pb-4 pt-6;
+}
+
+
+.edit-modal-icon {
+  @apply grid h-10 w-10 shrink-0 place-items-center rounded-xl;
+  background-color: var(--color-brand-subtle);
+}
+
+.edit-modal-icon svg {
+  @apply h-5 w-5;
+  color: var(--color-brand);
+}
+
+.edit-modal-title {
+  @apply mb-1 text-lg font-bold;
+  color: var(--session-text-dark);
+  font-family: var(--font-body);
+}
+
+.edit-modal-sub {
+  @apply text-xs leading-relaxed;
+  color: var(--session-text-light);
+}
+
+.edit-tabs {
+  @apply sticky top-0 z-20 flex shrink-0 gap-0 overflow-x-auto border-b bg-white px-6;
+  border-color: var(--session-border);
+  scrollbar-width: none;
+}
+.edit-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.edit-tab {
+  @apply -mb-px flex cursor-pointer items-center gap-1.5 whitespace-nowrap border-0 border-b-2 border-transparent bg-transparent px-4 py-2.5 text-xs font-medium transition-colors;
+  color: var(--session-text-light);
+  font-family: var(--font-body);
+}
+
+.edit-tab svg {
+  @apply h-3.5 w-3.5;
+}
+
+.edit-tab:hover {
+  color: var(--color-brand-hover);
+}
+
+.edit-tab.active {
+  border-bottom-color: var(--color-brand);
+  color: var(--color-brand);
+  font-weight: 700;
+}
+
+.edit-tab.done {
+  color: var(--color-brand-hover);
+}
+
+.edit-body {
+  @apply min-h-0 flex-1 overflow-y-auto px-6 py-5;
+}
+
+
+.edit-footer {
+  @apply relative z-20 flex shrink-0 items-center justify-between gap-3 border-t bg-white px-6 py-4;
+  border-color: var(--session-border);
+}
+
+.edit-info-box {
+  @apply rounded-lg border p-3.5;
+  background-color: var(--color-brand-subtle);
+  border-color: var(--teal-mid);
+}
+
+.edit-info-title {
+  @apply mb-1 text-sm font-bold;
+  color: var(--color-brand-hover);
+}
+
+.edit-info-desc {
+  @apply text-xs leading-relaxed;
+  color: var(--session-text-mid);
+}
+
+.edit-form-label {
+  @apply flex items-center gap-1.5 text-sm font-semibold;
+  color: var(--session-text-dark);
+}
+
+.edit-form-label svg {
+  @apply h-4 w-4;
+  color: var(--session-text-mid);
+}
+
+.edit-form-input {
+  @apply w-full rounded-lg border-2 bg-white px-3 py-2.5 text-sm outline-none transition-colors;
+  border-color: var(--session-border);
+  color: var(--session-text-dark);
+  font-family: var(--font-body);
+}
+
+.edit-form-input::placeholder {
+  color: var(--session-text-light);
+}
+
+.edit-form-input:focus {
+  border-color: var(--color-brand);
+}
+
+.edit-form-input.error {
+  border-color: var(--session-danger);
+}
+
+.edit-error-text {
+  @apply text-xs font-medium;
+  color: var(--session-danger);
+}
+
+.edit-helper-text {
+  @apply text-xs;
+  color: var(--session-text-light);
+}
+
+.edit-readonly-field {
+  @apply flex h-10 w-full items-center rounded-lg border-2 px-3 text-sm font-semibold;
+  background-color: var(--color-brand-subtle);
+  border-color: var(--teal-mid);
+  color: var(--color-brand-hover);
+}
+
+.edit-toggle-row {
+  @apply flex items-start justify-between gap-4 rounded-lg border p-4;
+  border-color: var(--session-border);
+}
+
+.edit-toggle-title {
+  @apply mb-1 text-sm font-bold;
+  color: var(--session-text-dark);
+}
+
+.edit-toggle-sub {
+  @apply text-xs leading-relaxed;
+  color: var(--session-text-light);
+}
+
+.edit-switch {
+  @apply relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center;
+}
+
+.edit-switch input {
+  @apply sr-only;
+}
+
+.edit-switch span {
+  @apply block h-6 w-11 rounded-full transition-colors;
+  background-color: var(--session-border);
+}
+
+.edit-switch span::before {
+  @apply absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform;
+  content: "";
+}
+
+.edit-switch input:checked + span {
+  background-color: var(--color-brand);
+}
+
+.edit-switch input:checked + span::before {
+  @apply translate-x-5;
+}
+
+.edit-option-card,
+.edit-duration-card {
+  @apply flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors;
+  border-color: var(--session-border);
+  background-color: var(--white);
+}
+
+.edit-option-card:hover,
+.edit-duration-card:hover {
+  background-color: var(--color-brand-subtle);
+  border-color: var(--teal-mid);
+}
+
+.edit-option-card.active,
+.edit-duration-card.active {
+  background-color: var(--color-brand-subtle);
+  border-color: var(--color-brand);
+}
+
+.edit-option-title,
+.edit-duration-value {
+  @apply block text-sm font-bold;
+  color: var(--session-text-dark);
+}
+
+.edit-option-sub,
+.edit-duration-sub {
+  @apply block text-xs;
+  color: var(--session-text-light);
+}
+
+.edit-duration-card svg {
+  @apply h-5 w-5 shrink-0;
+  color: var(--color-brand);
+}
+
+.edit-resume-tabs {
+  @apply flex flex-wrap gap-2 border-b pb-3;
+  border-color: var(--session-border);
+}
+
+.edit-resume-tab {
+  @apply cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2 text-sm font-semibold transition-colors;
+  color: var(--session-text-light);
+  font-family: var(--font-body);
+}
+
+.edit-resume-tab:hover {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand-hover);
+}
+
+.edit-resume-tab.active {
+  background-color: var(--color-brand);
+  color: var(--white);
+}
+
+.edit-resume-card {
+  @apply flex w-full cursor-pointer items-center gap-3 rounded-lg border-2 bg-white p-3.5 transition-colors;
+  border-color: var(--session-border);
+}
+
+.edit-resume-card:hover {
+  background-color: var(--color-brand-subtle);
+  border-color: var(--teal-mid);
+}
+
+.edit-resume-card.active {
+  background-color: var(--color-brand-subtle);
+  border-color: var(--color-brand);
+}
+
+.edit-resume-file-icon {
+  @apply grid h-10 w-10 shrink-0 place-items-center rounded-lg border;
+  background-color: var(--color-brand-subtle);
+  border-color: var(--teal-mid);
+}
+
+.edit-resume-file-icon svg {
+  @apply h-5 w-5;
+  color: var(--color-brand);
+}
+
+.edit-resume-name {
+  @apply truncate text-sm font-bold;
+  color: var(--session-text-dark);
+}
+
+.edit-resume-meta {
+  @apply mt-0.5 text-xs;
+  color: var(--session-text-light);
+}
+
+.edit-dropzone {
+  @apply flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed bg-white px-5 py-8 text-center transition-colors;
+  border-color: var(--session-border);
+}
+
+.edit-dropzone:hover,
+.edit-dropzone.active {
+  background-color: var(--color-brand-subtle);
+  border-color: var(--color-brand);
+}
+
+.edit-dropzone svg {
+  @apply h-8 w-8;
+  color: var(--session-text-light);
+}
+
+.edit-dropzone:hover svg,
+.edit-dropzone.active svg {
+  color: var(--color-brand);
+}
+
+.edit-dropzone-title {
+  @apply text-sm font-bold;
+  color: var(--session-text-dark);
+}
+
+.edit-dropzone-sub {
+  @apply text-xs;
+  color: var(--session-text-light);
+}
+
+.edit-dropzone-btn {
+  @apply mt-1 rounded-lg border-2 bg-white px-4 py-1.5 text-xs font-semibold transition-colors;
+  border-color: var(--session-border);
+  color: var(--session-text-dark);
+}
+
+.edit-dropzone:hover .edit-dropzone-btn {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.edit-uploaded-file {
+  @apply flex items-center gap-2 rounded-lg border p-3 text-sm font-semibold;
+  background-color: var(--color-brand-subtle);
+  border-color: var(--teal-mid);
+  color: var(--color-brand-hover);
+}
+
+.edit-uploaded-file svg {
+  @apply h-4 w-4 shrink-0;
+}
+
+.edit-uploaded-file button {
+  @apply ml-auto grid h-6 w-6 cursor-pointer place-items-center rounded-md border-0 bg-transparent transition-colors;
+  color: var(--session-text-light);
+}
+
+.edit-uploaded-file button:hover {
+  color: var(--session-danger);
+}
+
+.edit-success-box {
+  @apply flex items-center gap-2 rounded-lg border p-3 text-sm font-semibold;
+  background-color: var(--color-brand-subtle);
+  border-color: var(--teal-mid);
+  color: var(--color-brand-hover);
+}
+
+.edit-success-box svg {
+  @apply h-4 w-4 shrink-0;
+}
+
+.edit-section-title {
+  @apply text-sm font-bold;
+  color: var(--session-text-dark);
+}
+
+.edit-preview-frame {
+  @apply h-96 w-full rounded-xl border bg-slate-50;
+  border-color: var(--session-border);
+}
+
+.edit-empty-box {
+  @apply rounded-lg border-2 border-dashed px-4 py-8 text-center text-sm;
+  border-color: var(--session-border);
+  color: var(--session-text-light);
+}
+
+@media (max-width: 640px) {
+  .edit-modal-overlay {
+    @apply items-end p-0;
+  }
+
+  .edit-modal-box {
+    @apply h-[92vh] max-h-[92vh] rounded-b-none rounded-t-2xl;
+  }
+
+  .edit-modal-header,
+  .edit-tabs,
+  .edit-body,
+  .edit-footer {
+    @apply px-4;
+  }
+
+  .edit-footer {
+    @apply flex-col items-stretch;
+  }
+
+  .edit-footer .ml-auto {
+    @apply ml-0 w-full justify-end;
+  }
+}
+
+@layer utilities {
+  .view-modal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--teal-mid) transparent;
+  }
+
+  .view-modal-scroll::-webkit-scrollbar {
+    width: 0.5rem;
+  }
+
+  .view-modal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .view-modal-scroll::-webkit-scrollbar-thumb {
+    background: var(--teal-mid);
+    border-radius: 9999px;
+  }
+
+  .view-modal-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--color-brand);
+  }
+}
+  @keyframes sessionToastIn {
+    from {
+      opacity: 0;
+      transform: translateY(-0.5rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (max-width: 640px) {
+    .filter-bar .ml-auto {
+      @apply ml-0 w-full;
+    }
+
+    .sort-btn {
+      @apply w-full justify-center;
     }
   }
 }

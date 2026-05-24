@@ -1,21 +1,93 @@
-import React, { useState, useEffect } from "react";
-import { X, ArrowLeft, ArrowRight } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bot,
+  Briefcase,
+  Building2,
+  CheckCircle2,
+  Clock3,
+  FileCheck2,
+  FileText,
+  FileUp,
+  Globe2,
+  ListChecks,
+  Sparkles,
+  Timer,
+  Upload,
+  X,
+} from "lucide-react";
+
 import Toast from "../utils/toast";
-import ResumeUploader from "./ResumeUploader";
 import { getResumesService } from "../Services/resume.service";
 import { uploadToGCS } from "../utils/gcsUpload";
 import ResumeProcessingLoader from "./ResumeProcessingLoader";
 import { getPreviewSrc } from "../utils/getPreviewSrc";
 import AILoader from "./AILoader";
 
-export default function SessionEditModal({
-  open,
-  item,
-  onClose,
-  onSave,
-}) {
-  const [step, setStep] = useState(1);
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+const ACCEPTED_FILE_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+];
+
+const STEPS = [
+  {
+    id: 1,
+    label: "Company",
+    icon: Building2,
+  },
+  {
+    id: 2,
+    label: "Language & AI",
+    icon: Sparkles,
+  },
+  {
+    id: 3,
+    label: "Resume",
+    icon: FileText,
+  },
+  {
+    id: 4,
+    label: "Duration",
+    icon: Clock3,
+  },
+];
+
+const AI_MODELS = [
+  {
+    value: "GPT-4.1",
+    name: "GPT-4.1",
+    desc: "Best quality answers",
+    icon: "🤖",
+  },
+  {
+    value: "GPT-4 Turbo",
+    name: "GPT-4 Turbo",
+    desc: "Smart and reliable",
+    icon: "⚡",
+  },
+  {
+    value: "GPT-3.5",
+    name: "GPT-3.5",
+    desc: "Fast responses",
+    icon: "💬",
+  },
+  {
+    value: "GPT-4 Mini",
+    name: "GPT-4 Mini",
+    desc: "Fast & cheap",
+    icon: "✨",
+  },
+];
+
+export default function SessionEditModal({ open, item, onClose, onSave }) {
+  const fileInputRef = useRef(null);
+
+  const [step, setStep] = useState(1);
   const [toasts, setToasts] = useState([]);
   const [resumeMode, setResumeMode] = useState("current");
   const [existingResumes, setExistingResumes] = useState([]);
@@ -26,65 +98,8 @@ export default function SessionEditModal({
   const [previewUrl, setPreviewUrl] = useState("");
   const [signedPreview, setSignedPreview] = useState("");
   const [initializing, setInitializing] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
-  useEffect(() => {
-    if (!open) {
-      setForm({
-        company: "",
-        position: "",
-        jobDescription: "",
-        skills: "",
-        language: "English",
-        resumeUrl: "",
-        durationMinutes: 30,
-        autoExtend: true,
-      });
-
-      setPreviewUrl("");
-      setSignedPreview("");
-      setExistingResumes([]);
-      setResumeMode("current");
-    }
-  }, [open]);
-  useEffect(() => {
-    if (resumeMode === "existing") {
-      getResumesService()
-        .then(res => {
-          // res.data.data is the array of resumes
-          setExistingResumes(res.data?.data || []);
-        })
-        .catch(() => showToast("Failed to load resumes", "error"));
-    }
-  }, [resumeMode]);
-
-  useEffect(() => {
-    if (open) {
-      setToasts([]);
-    }
-  }, [open]);
-
-
-
-  const resetUploadState = () => {
-    setField("resumeTitle", "");
-    setField("resumeFile", null);
-    setField("resumeUrl", "");
-    setField("resumeId", "");
-    setPreviewUrl("");
-    setSignedPreview("");
-
-    setUploadComplete(false);
-  };
-  useEffect(() => {
-    if (resumeMode !== "upload") {
-      setUploadComplete(false);
-    }
-  }, [resumeMode]);
-
-  const showToast = (message, type = "success") => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-  };
   const [form, setForm] = useState({
     company: "",
     position: "",
@@ -92,166 +107,147 @@ export default function SessionEditModal({
     jobDescription: "",
     skills: "",
     language: "English",
+    simpleEnglish: false,
+    extraContext: "",
+    aiModel: "GPT-4.1",
     resumeUrl: "",
+    resumePreviewUrl: "",
+    resumeDownloadUrl: "",
+    resumeTitle: "",
+    resumeFile: null,
     durationMinutes: 30,
     autoExtend: true,
   });
 
-  useEffect(() => {
-    if (!item || !open) return;
-
-    const load = async () => {
-      setInitializing(true); // 👈 start loader
-
-      const raw = item.raw || item;
-
-      const previewLink =
-        raw.resumePreviewUrl ||
-        (raw.resumeId?._id ? `/api/resume/view/${raw.resumeId._id}` : "");
-
-      const downloadLink = raw.resumeDownloadUrl || raw.resumeUrl || "";
-
-      const finalPreview = previewLink || downloadLink;
-
-      const signed = await getPreviewSrc(finalPreview);
-
-      setForm({
-        company: raw.company || "",
-        position: raw.position || "",
-        jobDescription: raw.jobDescription || "",
-        skills: (raw.skills || []).join(", "),
-        language: raw.language || "English",
-        resumeUrl: downloadLink,
-        resumePreviewUrl: previewLink,
-        resumeDownloadUrl: downloadLink,
-        resumeTitle: raw.selectedResumeName || raw.resumeName || "",
-        durationMinutes: raw.durationMinutes || 30,
-        autoExtend: raw.autoExtend ?? true,
-      });
-
-      setPreviewUrl(finalPreview);
-      setSignedPreview(""); // clear firs
-      setSignedPreview(signed);
-
-      setResumeMode("current");
-      setStep(1);
-
-      setInitializing(false); // 👈 done
-    };
-
-    load();
-  }, [item, open]);
-
-  useEffect(() => {
-    if (resumeMode === "current" && item) {
-      const raw = item.raw || item;
-      const previewLink =
-        raw.resumePreviewUrl ||
-        (raw.resumeId?._id ? `/api/resume/view/${raw.resumeId._id}` : "") ||
-        raw.resumeUrl ||
-        raw.downloadUrl ||
-        "";
-
-      setPreviewUrl(previewLink);
-      setField("resumeUrl", previewLink);
-      setField("resumeTitle", raw.selectedResumeName || raw.resumeName || "");
-    }
-  }, [resumeMode, item]);
-
-  const setField = (key, value) =>
+  const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-
-  const next = () => {
-    if (step === 1 && !validateStep1()) return;
-    setStep((s) => Math.min(4, s + 1));
   };
-  const prev = () => setStep((s) => Math.max(1, s - 1));
 
-  async function save() {
+  const showToast = (message, type = "success") => {
+    const id = Date.now();
+
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const safePreviewSrc = async (url) => {
+    if (!url) return "";
+
     try {
-      if (!form.resumeUrl && item) {
-        const raw = item.raw || item;
-
-        setForm(prev => ({
-          ...prev,
-          resumeUrl: raw.resumeDownloadUrl || raw.resumeUrl || "",
-          resumePreviewUrl:
-            raw.resumePreviewUrl ||
-            (raw.resumeId?._id ? `/api/resume/view/${raw.resumeId._id}` : ""),
-          resumeDownloadUrl:
-            raw.resumeDownloadUrl || raw.resumeUrl || ""
-        }));
-      }
-      if (!form.resumeUrl) {
-        showToast("Please select or upload a resume", "error");
-        return;
-      }
-      if (!form.company || !form.position) {
-        showToast("Company & Position are required", "error");
-        return;
-      }
-
-      if (!form.resumeUrl) {
-        showToast("Please select or upload a resume", "error");
-        return;
-      }
-
-
-      const raw = item?.raw || item;
-
-      const payload = {
-        company: form.company,
-        position: form.position,
-        jobDescription: form.jobDescription,
-
-        skills: form.skills
-          ? form.skills.split(",").map(s => s.trim()).filter(Boolean)
-          : [],
-
-        language: form.language,
-        simpleEnglish: form.simpleEnglish || false,
-        extraContext: form.extraContext || "",
-        aiModel: form.aiModel || "GPT-4.1",
-
-        // ✅ SAFE FALLBACKS
-        resumePreviewUrl:
-          form.resumePreviewUrl ||
-          raw?.resumePreviewUrl ||
-          (raw?.resumeId?._id ? `/api/resume/view/${raw.resumeId._id}` : "") ||
-          form.resumeUrl,
-
-        resumeDownloadUrl:
-          form.resumeDownloadUrl ||
-          raw?.resumeDownloadUrl ||
-          raw?.resumeUrl ||
-          form.resumeUrl,
-
-        selectedResumeName: form.resumeTitle || "",
-
-        durationMinutes: Number(form.durationMinutes) || 30,
-        autoExtend: form.autoExtend,
-      };
-      setSaving(true);
-
-      await onSave(payload);
-      window.dispatchEvent(new Event("session-updated"));
-      showToast("Session updated successfully!", "success");
-
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-
-    } catch (err) {
-      console.error(err);
-      setSaving(false);
-      showToast("Failed to update session", "error");
+      return await getPreviewSrc(url);
+    } catch (error) {
+      console.error("Preview URL error:", error);
+      return "";
     }
-    finally {
-      setSaving(false);
-    }
-  }
+  };
 
-  if (!open) return null;
+  const getRawItem = () => item?.raw || item || {};
+
+  const getCurrentResumeLinks = () => {
+    const raw = getRawItem();
+
+    const previewLink =
+      raw.resumePreviewUrl ||
+      (raw.resumeId?._id ? `/api/resume/view/${raw.resumeId._id}` : "") ||
+      raw.resumeUrl ||
+      raw.downloadUrl ||
+      "";
+
+    const downloadLink =
+      raw.resumeDownloadUrl ||
+      raw.resumeUrl ||
+      raw.downloadUrl ||
+      previewLink ||
+      "";
+
+    return {
+      previewLink,
+      downloadLink,
+      title: raw.selectedResumeName || raw.resumeName || raw.resumeId?.title || "Current Resume",
+    };
+  };
+
+  const resetUploadState = () => {
+    setField("resumeTitle", "");
+    setField("resumeFile", null);
+    setField("resumeUrl", "");
+    setField("resumePreviewUrl", "");
+    setField("resumeDownloadUrl", "");
+    setField("resumeId", "");
+    setPreviewUrl("");
+    setSignedPreview("");
+    setUploadComplete(false);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const loadCurrentResume = async () => {
+    const { previewLink, downloadLink, title } = getCurrentResumeLinks();
+
+    setField("resumeId", "");
+    setField("resumeUrl", downloadLink || previewLink);
+    setField("resumePreviewUrl", previewLink);
+    setField("resumeDownloadUrl", downloadLink);
+    setField("resumeTitle", title);
+
+    setPreviewUrl(previewLink || downloadLink);
+    setSignedPreview("");
+
+    const signed = await safePreviewSrc(previewLink || downloadLink);
+    setSignedPreview(signed);
+  };
+
+  const normalizeResumes = (response) => {
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response?.data)) return response.data;
+    if (Array.isArray(response?.data?.data)) return response.data.data;
+    if (Array.isArray(response?.resumes)) return response.resumes;
+    return [];
+  };
+
+  const getResumeId = (resume) => String(resume?._id || resume?.id || "");
+
+  const getResumeTitle = (resume) =>
+    resume?.title || resume?.fileName || resume?.name || "Untitled Resume";
+
+  const getResumePreviewLink = (resume) =>
+    resume?.previewUrl ||
+    resume?.resumePreviewUrl ||
+    resume?.resumeUrl ||
+    resume?.downloadUrl ||
+    resume?.resumeDownloadUrl ||
+    "";
+
+  const getResumeDownloadLink = (resume) =>
+    resume?.downloadUrl ||
+    resume?.resumeDownloadUrl ||
+    resume?.resumeUrl ||
+    resume?.previewUrl ||
+    "";
+
+  const formatResumeMeta = (resume) => {
+    const rawDate = resume?.createdAt || resume?.updatedAt || resume?.uploadedAt;
+
+    if (!rawDate) return "Saved resume";
+
+    try {
+      const date =
+        typeof rawDate === "object" && rawDate._seconds
+          ? new Date(rawDate._seconds * 1000)
+          : new Date(rawDate);
+
+      return Number.isNaN(date.getTime())
+        ? "Saved resume"
+        : date.toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+    } catch {
+      return "Saved resume";
+    }
+  };
 
   const validateStep1 = () => {
     const newErrors = {};
@@ -269,459 +265,918 @@ export default function SessionEditModal({
     return Object.keys(newErrors).length === 0;
   };
 
+  const hasSelectedResume = () => {
+    return Boolean(form.resumeUrl || form.resumePreviewUrl || form.resumeDownloadUrl || previewUrl);
+  };
+
+  const goToStep = (targetStep) => {
+    if (targetStep === step) return;
+
+    if (step === 1 && targetStep > 1 && !validateStep1()) return;
+
+    if (step === 3 && targetStep > 3 && !hasSelectedResume()) {
+      showToast("Please select or upload a resume", "error");
+      return;
+    }
+
+    setStep(targetStep);
+  };
+
+  const next = () => {
+    if (step === 1 && !validateStep1()) return;
+
+    if (step === 3) {
+      if (resumeMode === "upload" && !uploadComplete) {
+        showToast("Please upload resume before continuing", "error");
+        return;
+      }
+
+      if (!hasSelectedResume()) {
+        showToast("Please select or upload a resume", "error");
+        return;
+      }
+    }
+
+    setStep((current) => Math.min(4, current + 1));
+  };
+
+  const prev = () => {
+    setStep((current) => Math.max(1, current - 1));
+  };
+
+  const handleClose = () => {
+    setStep(1);
+    onClose();
+  };
+
+  const handleFileSelect = (file) => {
+    if (!file) return;
+
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    const isAcceptedExtension = ["pdf", "doc", "docx", "txt"].includes(extension);
+    const isAcceptedMime = ACCEPTED_FILE_TYPES.includes(file.type);
+
+    if (!isAcceptedMime && !isAcceptedExtension) {
+      showToast("Only PDF, DOC, DOCX, or TXT files are allowed", "error");
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      showToast("Resume file size must be less than 10MB", "error");
+      return;
+    }
+
+    setField("resumeFile", file);
+
+    if (!form.resumeTitle?.trim()) {
+      setField("resumeTitle", file.name.replace(/\.[^/.]+$/, ""));
+    }
+
+    setUploadComplete(false);
+    setPreviewUrl("");
+    setSignedPreview("");
+  };
+
+  const handleUploadResume = async () => {
+    try {
+      if (!form.resumeTitle?.trim()) {
+        showToast("Resume title is required", "error");
+        return;
+      }
+
+      if (!form.resumeFile) {
+        showToast("Please choose a resume file", "error");
+        return;
+      }
+
+      setIsUploading(true);
+      showToast("Uploading resume...", "info");
+
+      const res = await uploadToGCS(form.resumeFile, form.resumeTitle);
+      const uploaded = res?.resume || res?.data?.resume || res?.data || res;
+
+      if (!uploaded) {
+        throw new Error("Upload response is empty");
+      }
+
+      const uploadedPreview =
+        uploaded.previewUrl ||
+        uploaded.resumePreviewUrl ||
+        uploaded.resumeUrl ||
+        uploaded.downloadUrl ||
+        "";
+
+      const uploadedDownload =
+        uploaded.downloadUrl ||
+        uploaded.resumeDownloadUrl ||
+        uploaded.resumeUrl ||
+        uploadedPreview ||
+        "";
+
+      setField("resumeId", "");
+      setField("resumeUrl", uploadedDownload || uploadedPreview);
+      setField("resumePreviewUrl", uploadedPreview);
+      setField("resumeDownloadUrl", uploadedDownload);
+      setField("resumeTitle", uploaded.title || form.resumeTitle);
+
+      const signed = await safePreviewSrc(uploadedPreview || uploadedDownload);
+
+      setPreviewUrl(uploadedPreview || uploadedDownload);
+      setSignedPreview(signed);
+      setUploadComplete(true);
+
+      showToast("Resume uploaded successfully!", "success");
+    } catch (error) {
+      console.error("Resume upload failed:", error);
+      showToast("Upload failed", "error");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleExistingResumeSelect = async (resume) => {
+    const id = getResumeId(resume);
+    const title = getResumeTitle(resume);
+    const previewLink = getResumePreviewLink(resume);
+    const downloadLink = getResumeDownloadLink(resume);
+
+    if (!id) return;
+
+    setField("resumeId", id);
+    setField("resumeUrl", downloadLink || previewLink);
+    setField("resumePreviewUrl", previewLink);
+    setField("resumeDownloadUrl", downloadLink);
+    setField("resumeTitle", title);
+
+    setPreviewUrl(previewLink || downloadLink);
+    setSignedPreview("");
+
+    const signed = await safePreviewSrc(previewLink || downloadLink);
+    setSignedPreview(signed);
+  };
+
+  const save = async () => {
+    try {
+      if (!form.company.trim() || !form.position.trim()) {
+        showToast("Company & Position are required", "error");
+        setStep(1);
+        return;
+      }
+
+      const raw = getRawItem();
+      const currentLinks = getCurrentResumeLinks();
+
+      const effectivePreviewUrl =
+        form.resumePreviewUrl ||
+        previewUrl ||
+        raw.resumePreviewUrl ||
+        currentLinks.previewLink ||
+        form.resumeUrl ||
+        "";
+
+      const effectiveDownloadUrl =
+        form.resumeDownloadUrl ||
+        form.resumeUrl ||
+        raw.resumeDownloadUrl ||
+        raw.resumeUrl ||
+        currentLinks.downloadLink ||
+        effectivePreviewUrl ||
+        "";
+
+      if (!effectivePreviewUrl && !effectiveDownloadUrl) {
+        showToast("Please select or upload a resume", "error");
+        setStep(3);
+        return;
+      }
+
+      const payload = {
+        company: form.company.trim(),
+        position: form.position.trim(),
+        jobDescription: form.jobDescription || "",
+        skills: form.skills
+          ? form.skills
+              .split(",")
+              .map((skill) => skill.trim())
+              .filter(Boolean)
+          : [],
+        language: form.language || "English",
+        simpleEnglish: Boolean(form.simpleEnglish),
+        extraContext: form.extraContext || "",
+        aiModel: form.aiModel || "GPT-4.1",
+        resumeUrl: effectiveDownloadUrl || effectivePreviewUrl,
+        resumePreviewUrl: effectivePreviewUrl || effectiveDownloadUrl,
+        resumeDownloadUrl: effectiveDownloadUrl || effectivePreviewUrl,
+        selectedResumeName:
+          form.resumeTitle ||
+          raw.selectedResumeName ||
+          raw.resumeName ||
+          currentLinks.title ||
+          "",
+        durationMinutes: Number(form.durationMinutes) || 30,
+        autoExtend: Boolean(form.autoExtend),
+      };
+
+      if (form.resumeId) {
+        payload.resumeId = form.resumeId;
+      }
+
+      setSaving(true);
+
+      await onSave(payload);
+
+      window.dispatchEvent(new Event("session-updated"));
+      showToast("Session updated successfully!", "success");
+
+      setTimeout(() => {
+        handleClose();
+      }, 800);
+    } catch (error) {
+      console.error("Edit save failed:", error);
+      showToast("Failed to update session", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!open) {
+      setForm({
+        company: "",
+        position: "",
+        resumeId: "",
+        jobDescription: "",
+        skills: "",
+        language: "English",
+        simpleEnglish: false,
+        extraContext: "",
+        aiModel: "GPT-4.1",
+        resumeUrl: "",
+        resumePreviewUrl: "",
+        resumeDownloadUrl: "",
+        resumeTitle: "",
+        resumeFile: null,
+        durationMinutes: 30,
+        autoExtend: true,
+      });
+
+      setPreviewUrl("");
+      setSignedPreview("");
+      setExistingResumes([]);
+      setResumeMode("current");
+      setUploadComplete(false);
+      setErrors({});
+      setDragActive(false);
+      return;
+    }
+
+    setToasts([]);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !item) return;
+
+    const load = async () => {
+      try {
+        setInitializing(true);
+
+        const raw = getRawItem();
+
+        const previewLink =
+          raw.resumePreviewUrl ||
+          (raw.resumeId?._id ? `/api/resume/view/${raw.resumeId._id}` : "") ||
+          raw.resumeUrl ||
+          raw.downloadUrl ||
+          "";
+
+        const downloadLink =
+          raw.resumeDownloadUrl ||
+          raw.resumeUrl ||
+          raw.downloadUrl ||
+          previewLink ||
+          "";
+
+        const finalPreview = previewLink || downloadLink;
+        const signed = await safePreviewSrc(finalPreview);
+
+        setForm({
+          company: raw.company || "",
+          position: raw.position || "",
+          jobDescription: raw.jobDescription || "",
+          skills: Array.isArray(raw.skills) ? raw.skills.join(", ") : raw.skills || "",
+          language: raw.language || "English",
+          simpleEnglish: Boolean(raw.simpleEnglish),
+          extraContext: raw.extraContext || "",
+          aiModel: raw.aiModel || "GPT-4.1",
+          resumeId: "",
+          resumeUrl: downloadLink || finalPreview,
+          resumePreviewUrl: previewLink,
+          resumeDownloadUrl: downloadLink,
+          resumeTitle: raw.selectedResumeName || raw.resumeName || raw.resumeId?.title || "",
+          resumeFile: null,
+          durationMinutes: raw.durationMinutes || 30,
+          autoExtend: raw.autoExtend ?? true,
+        });
+
+        setPreviewUrl(finalPreview);
+        setSignedPreview(signed);
+        setResumeMode("current");
+        setUploadComplete(false);
+        setStep(1);
+      } catch (error) {
+        console.error("Session edit load failed:", error);
+        showToast("Failed to load session details", "error");
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    load();
+  }, [item, open]);
+
+  useEffect(() => {
+    if (!open || resumeMode !== "existing") return;
+
+    getResumesService()
+      .then((res) => {
+        setExistingResumes(normalizeResumes(res));
+      })
+      .catch((error) => {
+        console.error("Failed to load resumes:", error);
+        showToast("Failed to load resumes", "error");
+      });
+  }, [open, resumeMode]);
+
+  useEffect(() => {
+    if (!open || resumeMode !== "current" || !item) return;
+
+    loadCurrentResume();
+  }, [resumeMode]);
+
   if (!open) return null;
 
+  const currentLinks = getCurrentResumeLinks();
+
+  const isNextDisabled =
+    initializing ||
+    (step === 3 && resumeMode === "upload" && !uploadComplete) ||
+    (step === 3 && resumeMode !== "current" && !hasSelectedResume());
+
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      className="edit-modal-overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
+      <div className="edit-modal-box" role="dialog" aria-modal="true">
+        <button type="button" onClick={handleClose} className="edit-modal-close">
+          <X />
+        </button>
 
-      {/* Modal Container */}
-      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative animate-fadeIn
-                      max-h-[90vh] flex flex-col">
+        <div className="edit-modal-header">
+          <div className="edit-modal-icon">
+            <FileCheck2 />
+          </div>
 
-        {/* HEADER */}
-        <div className="p-6 border-b">
-          <button
-            onClick={() => {
-              setStep(1);
-              onClose();
-            }}
-            className="absolute right-4 top-4 text-gray-400 hover:text-gray-700"
-          >
-            <X size={26} />
-          </button>
-
-          <h2 className="text-2xl font-bold">Edit Session</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Update interview details and preferences.
-          </p>
-
-          <div className="mt-2 text-xs text-gray-400">
-            Step {step} of 4
+          <div className="min-w-0">
+            <h2 className="edit-modal-title">Edit Session</h2>
+            <p className="edit-modal-sub">
+              Update interview details and preferences. Step {step} of {STEPS.length}
+            </p>
           </div>
         </div>
 
-        {/* BODY (SCROLLABLE) */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="edit-tabs">
+          {STEPS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = step === tab.id;
+            const isDone = step > tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => goToStep(tab.id)}
+                className={`edit-tab ${isActive ? "active" : ""} ${isDone ? "done" : ""}`}
+              >
+                {isDone ? <CheckCircle2 /> : <Icon />}
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="edit-body">
           {initializing ? (
-            <div className="flex items-center justify-center h-[300px]">
+            <div className="flex min-h-80 items-center justify-center">
               <AILoader text="Loading session..." />
             </div>
           ) : (
             <>
-
               {step === 1 && (
-                <div className="space-y-5">
+                <div className="space-y-4">
+                  <div className="edit-info-box">
+                    <div className="edit-info-title">Company & Role Details</div>
+                    <div className="edit-info-desc">
+                      Update the company name, job role, description, and key skills for this interview session.
+                    </div>
+                  </div>
 
-                  <div>
-                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                      🏢 Company <span className="text-red-500">*</span>
+                  <div className="space-y-1.5">
+                    <label className="edit-form-label">
+                      <Building2 />
+                      Company <span className="text-red-500">*</span>
                     </label>
 
                     <input
                       type="text"
-                      placeholder="Enter Company Name"
+                      placeholder="Enter company name"
                       value={form.company}
-                      onChange={(e) => {
-                        setField("company", e.target.value);
+                      onChange={(event) => {
+                        setField("company", event.target.value);
                         setErrors((prev) => ({ ...prev, company: "" }));
                       }}
-                      className={`w-full p-3 rounded-lg border ${errors.company ? "border-red-500" : "border-gray-300"
-                        } focus:ring-2 focus:ring-theme-primary focus:outline-none`}
+                      className={`edit-form-input ${errors.company ? "error" : ""}`}
                     />
 
-                    {errors.company && (
-                      <p className="text-red-500 text-xs mt-1">{errors.company}</p>
-                    )}
+                    {errors.company && <p className="edit-error-text">{errors.company}</p>}
                   </div>
 
-                  <div>
-                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                      💼 Position <span className="text-red-500">*</span>
+                  <div className="space-y-1.5">
+                    <label className="edit-form-label">
+                      <Briefcase />
+                      Position <span className="text-red-500">*</span>
                     </label>
 
                     <input
                       type="text"
-                      placeholder="Enter Position / Role"
+                      placeholder="Enter position / role"
                       value={form.position}
-                      onChange={(e) => {
-                        setField("position", e.target.value);
+                      onChange={(event) => {
+                        setField("position", event.target.value);
                         setErrors((prev) => ({ ...prev, position: "" }));
                       }}
-                      className={`w-full p-3 rounded-lg border ${errors.position ? "border-red-500" : "border-gray-300"
-                        } focus:ring-2 focus:ring-theme-primary focus:outline-none`}
+                      className={`edit-form-input ${errors.position ? "error" : ""}`}
                     />
 
-                    {errors.position && (
-                      <p className="text-red-500 text-xs mt-1">{errors.position}</p>
-                    )}
+                    {errors.position && <p className="edit-error-text">{errors.position}</p>}
                   </div>
 
-                  {/* Job Description */}
-                  <div>
-                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                      📝 Job Description
+                  <div className="space-y-1.5">
+                    <label className="edit-form-label">
+                      <ListChecks />
+                      Job Description
                     </label>
 
                     <textarea
-                      rows={3}
-                      placeholder="Enter job responsibilities or description"
+                      rows={4}
+                      placeholder="Paste or update the job description here..."
                       value={form.jobDescription}
-                      onChange={(e) => setField("jobDescription", e.target.value)}
-                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-theme-primary focus:outline-none resize-none"
+                      onChange={(event) => setField("jobDescription", event.target.value)}
+                      className="edit-form-input resize-none"
                     />
                   </div>
 
-                  {/* Skills */}
-                  <div>
-                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                      🧭 Skills
+                  <div className="space-y-1.5">
+                    <label className="edit-form-label">
+                      <Sparkles />
+                      Skills
                     </label>
 
                     <input
                       type="text"
                       placeholder="e.g. React, Node.js, SQL"
                       value={form.skills}
-                      onChange={(e) => setField("skills", e.target.value)}
-                      className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-theme-primary focus:outline-none"
+                      onChange={(event) => setField("skills", event.target.value)}
+                      className="edit-form-input"
                     />
 
-                    <p className="text-xs text-gray-500 mt-1">
-                      Separate skills with commas.
-                    </p>
+                    <p className="edit-helper-text">Separate skills with commas.</p>
                   </div>
-
                 </div>
               )}
 
               {step === 2 && (
-                <div className="space-y-5">
-
-                  {/* Language */}
-
-                  <div>
-                    <label className="text-gray-700 font-medium text-sm flex items-center gap-2 mb-1">
-                      🌐 Language
-                    </label>
-
-                    <div className="w-full h-10 px-3 flex items-center text-sm rounded-md border border-indigo-300 bg-indigo-50 text-indigo-700 font-medium">
-                      English
+                <div className="space-y-4">
+                  <div className="edit-info-box">
+                    <div className="edit-info-title">Language & AI Settings</div>
+                    <div className="edit-info-desc">
+                      Keep answers in English and choose how simple or advanced the AI responses should be.
                     </div>
                   </div>
 
+                  <div className="space-y-1.5">
+                    <label className="edit-form-label">
+                      <Globe2 />
+                      Interview Language
+                    </label>
 
+                    <div className="edit-readonly-field">English</div>
+                  </div>
 
-                  {/* Simple English Toggle */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Simple English</span>
+                  <div className="edit-toggle-row">
+                    <div>
+                      <div className="edit-toggle-title">Simple English</div>
+                      <p className="edit-toggle-sub">
+                        Enable this if you want the AI to avoid complex vocabulary.
+                      </p>
+                    </div>
 
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="edit-switch">
                       <input
                         type="checkbox"
                         checked={form.simpleEnglish || false}
-                        onChange={() =>
-                          setField("simpleEnglish", !form.simpleEnglish)
-                        }
-                        className="sr-only peer"
+                        onChange={() => setField("simpleEnglish", !form.simpleEnglish)}
                       />
-
-                      <div className="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-theme-primary"></div>
-
-                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
+                      <span />
                     </label>
                   </div>
 
-                  <p className="text-gray-500 text-xs">
-                    If English is not your first language, enable this so AI avoids complex vocabulary.
-                  </p>
+                  <div className="space-y-2">
+                    <label className="edit-form-label">
+                      <Bot />
+                      AI Model
+                    </label>
 
-                  {/* Extra Context */}
-                  <div>
-                    <label className="text-sm font-medium block mb-1">
-                      Extra Context / Instructions (Optional)
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {AI_MODELS.map((model) => (
+                        <label
+                          key={model.value}
+                          className={`edit-option-card ${
+                            form.aiModel === model.value ? "active" : ""
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="aiModel"
+                            value={model.value}
+                            checked={form.aiModel === model.value}
+                            onChange={() => setField("aiModel", model.value)}
+                            className="hidden"
+                          />
+
+                          <span className="text-2xl">{model.icon}</span>
+
+                          <span>
+                            <span className="edit-option-title">{model.name}</span>
+                            <span className="edit-option-sub">{model.desc}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="edit-form-label">
+                      <ListChecks />
+                      Extra Context / Instructions
                     </label>
 
                     <textarea
                       rows={4}
                       placeholder="Write any extra instructions..."
                       value={form.extraContext || ""}
-                      onChange={(e) => setField("extraContext", e.target.value)}
-                      className="w-full p-3 rounded-lg border border-gray-300"
+                      onChange={(event) => setField("extraContext", event.target.value)}
+                      className="edit-form-input resize-none"
                     />
                   </div>
-
-                  {/* AI Model */}
-                  <div>
-                    <label className="text-sm font-medium block mb-1">
-                      🤖 AI Model (Optional)
-                    </label>
-
-                    <select
-                      value={form.aiModel || "GPT-4.1"}
-                      onChange={(e) => setField("aiModel", e.target.value)}
-                      className="w-full p-3 rounded-lg border border-gray-300"
-                    >
-                      <option value="GPT-4.1">GPT-4.1 (Smarter)</option>
-                      <option value="GPT-4 Turbo">GPT-4 Turbo</option>
-                      <option value="GPT-3.5">GPT-3.5</option>
-                      <option value="GPT-4 Mini">GPT-4 Mini (Fast & Cheap)</option>
-                    </select>
-                  </div>
-
                 </div>
               )}
 
               {step === 3 && (
-                <div className="space-y-6">
-
-                  {/* OPTIONS */}
-                  <div className="flex gap-6 border-b pb-4 text-sm font-medium">
-
-                    {/* CURRENT */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={resumeMode === "current"}
-                        onChange={async () => {
-                          resetUploadState(); // already clears preview
-                          setResumeMode("current");
-
-                          const raw = item?.raw || item;
-
-                          const previewLink =
-                            raw.resumePreviewUrl ||
-                            (raw.resumeId?._id
-                              ? `/api/resume/view/${raw.resumeId._id}`
-                              : "") ||
-                            raw.resumeUrl ||
-                            raw.downloadUrl ||
-                            "";
-
-                          setField("resumeUrl", raw.resumeDownloadUrl || raw.resumeUrl || "");
-                          setField("resumePreviewUrl", previewLink);
-                          setField("resumeDownloadUrl", raw.resumeDownloadUrl || raw.resumeUrl || "");
-                          setField("resumeId", ""); // ✅ reset selection
-
-                          const signed = await getPreviewSrc(previewLink);
-
-                          setPreviewUrl(previewLink);
-                          setSignedPreview(signed);
-                        }}
-                      />
-                      Use Current
-                    </label>
-
-                    {/* EXISTING */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={resumeMode === "existing"}
-                        onChange={() => {
-                          resetUploadState(); // ✅ clears preview
-                          setResumeMode("existing");
-                        }}
-                      />
-                      Existing
-                    </label>
-
-                    {/* UPLOAD */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={resumeMode === "upload"}
-                        onChange={() => {
-                          resetUploadState(); // ✅ clears preview
-                          setResumeMode("upload");
-                        }}
-                      />
-                      Upload New
-                    </label>
+                <div className="space-y-4">
+                  <div className="edit-info-box">
+                    <div className="edit-info-title">Resume / CV</div>
+                    <div className="edit-info-desc">
+                      Use the current resume, select an existing resume, or upload a new resume for this session.
+                    </div>
                   </div>
 
-                  {/* EXISTING RESUME */}
+                  <div className="edit-resume-tabs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetUploadState();
+                        setResumeMode("current");
+                      }}
+                      className={`edit-resume-tab ${resumeMode === "current" ? "active" : ""}`}
+                    >
+                      Use Current
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetUploadState();
+                        setResumeMode("existing");
+                      }}
+                      className={`edit-resume-tab ${resumeMode === "existing" ? "active" : ""}`}
+                    >
+                      Select Existing
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetUploadState();
+                        setResumeMode("upload");
+                      }}
+                      className={`edit-resume-tab ${resumeMode === "upload" ? "active" : ""}`}
+                    >
+                      Upload Resume
+                    </button>
+                  </div>
+
+                  {resumeMode === "current" && (
+                    <div className="edit-resume-card active">
+                      <div className="edit-resume-file-icon">
+                        <FileText />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="edit-resume-name">
+                          {form.resumeTitle || currentLinks.title || "Current Resume"}
+                        </div>
+                        <div className="edit-resume-meta">
+                          Currently attached to this session
+                        </div>
+                      </div>
+
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-brand" />
+                    </div>
+                  )}
+
                   {resumeMode === "existing" && (
-                    <div>
-                      <select
-                        className="w-full p-3 border rounded-lg"
-                        value={form.resumeId || ""}
-                        onChange={async (e) => {
-                          const value = e.target.value;
+                    <div className="space-y-3">
+                      {existingResumes.length === 0 ? (
+                        <div className="edit-empty-box">
+                          No saved resumes found. You can upload a new resume instead.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {existingResumes.map((resume) => {
+                            const id = getResumeId(resume);
+                            const isSelected = String(form.resumeId) === id;
 
-                          const selected = existingResumes.find(
-                            r => String(r._id) === value
-                          );
+                            return (
+                              <button
+                                key={id}
+                                type="button"
+                                onClick={() => handleExistingResumeSelect(resume)}
+                                className={`edit-resume-card text-left ${
+                                  isSelected ? "active" : ""
+                                }`}
+                              >
+                                <div className="edit-resume-file-icon">
+                                  <FileText />
+                                </div>
 
-                          if (!selected) return;
+                                <div className="min-w-0 flex-1">
+                                  <div className="edit-resume-name">
+                                    {getResumeTitle(resume)}
+                                  </div>
+                                  <div className="edit-resume-meta">
+                                    {formatResumeMeta(resume)}
+                                  </div>
+                                </div>
 
-                          const previewLink =
-                            selected.previewUrl ||
-                            selected.resumeUrl ||
-                            selected.downloadUrl;
-
-                          setField("resumeId", value); // ✅ IMPORTANT
-                          setField("resumeUrl", previewLink);
-                          setField("resumeTitle", selected.title);
-
-                          const signed = await getPreviewSrc(previewLink);
-
-                          setPreviewUrl(previewLink);
-                          setSignedPreview(signed);
-                        }}
-                      >
-                        {/* Placeholder (not selectable) */}
-                        <option value="" disabled hidden>
-                          Select Resume
-                        </option>
-
-                        {existingResumes.map(r => (
-                          <option key={r._id} value={r._id}>
-                            {r.title}
-                          </option>
-                        ))}
-                      </select>
+                                {isSelected && (
+                                  <CheckCircle2 className="h-5 w-5 shrink-0 text-brand" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {!previewUrl && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Select a resume to preview
-                        </p>
+                        <p className="edit-helper-text">Select a resume to preview it.</p>
                       )}
                     </div>
                   )}
 
-                  {/* UPLOAD */}
                   {resumeMode === "upload" && (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="edit-form-label">
+                          <FileCheck2 />
+                          Resume Title <span className="text-red-500">*</span>
+                        </label>
 
-                      <label className="block text-sm font-medium">
-                        Resume Title <span className="text-red-500">*</span>
-                      </label>
+                        <input
+                          type="text"
+                          placeholder="Resume title"
+                          value={form.resumeTitle || ""}
+                          onChange={(event) => setField("resumeTitle", event.target.value)}
+                          className="edit-form-input"
+                        />
+                      </div>
 
-                      <input
-                        type="text"
-                        placeholder="Resume Title"
-                        value={form.resumeTitle || ""}
-                        onChange={(e) => setField("resumeTitle", e.target.value)}
-                        className="w-full p-3 border rounded-lg"
-                      />
-
-                      <ResumeUploader
-                        allowExisting={false}
-                        onSelect={({ file }) => {
-                          setField("resumeFile", file);
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => fileInputRef.current?.click()}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            fileInputRef.current?.click();
+                          }
                         }}
-                      />
+                        onDragEnter={(event) => {
+                          event.preventDefault();
+                          setDragActive(true);
+                        }}
+                        onDragOver={(event) => {
+                          event.preventDefault();
+                          setDragActive(true);
+                        }}
+                        onDragLeave={(event) => {
+                          event.preventDefault();
+                          setDragActive(false);
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          setDragActive(false);
+                          handleFileSelect(event.dataTransfer.files?.[0]);
+                        }}
+                        className={`edit-dropzone ${dragActive ? "active" : ""}`}
+                      >
+                        <Upload />
+
+                        <div>
+                          <div className="edit-dropzone-title">
+                            {form.resumeFile ? form.resumeFile.name : "Drop your resume here"}
+                          </div>
+                          <div className="edit-dropzone-sub">
+                            PDF, DOC, DOCX, or TXT • Max 10MB
+                          </div>
+                        </div>
+
+                        <span className="edit-dropzone-btn">Browse files</span>
+
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx,.txt"
+                          className="hidden"
+                          onChange={(event) => handleFileSelect(event.target.files?.[0])}
+                        />
+                      </div>
+
+                      {form.resumeFile && (
+                        <div className="edit-uploaded-file">
+                          <FileCheck2 />
+                          <span className="truncate">{form.resumeFile.name}</span>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setField("resumeFile", null);
+                              setUploadComplete(false);
+
+                              if (fileInputRef.current) {
+                                fileInputRef.current.value = "";
+                              }
+                            }}
+                          >
+                            <X />
+                          </button>
+                        </div>
+                      )}
 
                       {!uploadComplete && (
                         <button
-                          disabled={
-                            !form.resumeTitle?.trim() ||
-                            !form.resumeFile ||
-                            isUploading
-                          }
-                          onClick={async () => {
-                            try {
-                              setIsUploading(true);
-                              showToast("Uploading resume...", "info");
-
-                              const res = await uploadToGCS(
-                                form.resumeFile,
-                                form.resumeTitle
-                              );
-
-                              const uploaded = res.resume;
-
-                              setField("resumeId", ""); // ✅ ADD HERE (VERY IMPORTANT)
-
-                              setField("resumeUrl", uploaded.downloadUrl);
-                              setField("resumePreviewUrl", uploaded.previewUrl);
-                              setField("resumeDownloadUrl", uploaded.downloadUrl);
-                              setField("resumeTitle", uploaded.title || form.resumeTitle); // optional but good
-
-                              // ✅ SIGNED URL
-                              const signed = await getPreviewSrc(uploaded.previewUrl);
-                              setPreviewUrl(uploaded.previewUrl);
-                              setSignedPreview(signed);
-
-                              setUploadComplete(true);
-
-
-                            } catch {
-                              showToast("Upload failed", "error");
-                            } finally {
-                              setIsUploading(false);
-                            }
-                          }}
-                          className={`px-4 py-2 rounded-lg text-white ${!form.resumeTitle?.trim() ||
-                            !form.resumeFile ||
-                            isUploading
-                            ? "bg-gray-400"
-                            : "bg-indigo-600"
-                            }`}
+                          type="button"
+                          disabled={!form.resumeTitle?.trim() || !form.resumeFile || isUploading}
+                          onClick={handleUploadResume}
+                          className="btn-teal disabled:cursor-not-allowed disabled:opacity-50"
                         >
+                          <FileUp />
                           {isUploading ? "Uploading..." : "Upload Resume"}
                         </button>
+                      )}
+
+                      {uploadComplete && (
+                        <div className="edit-success-box">
+                          <CheckCircle2 />
+                          Resume uploaded successfully. You can continue to the next step.
+                        </div>
                       )}
                     </div>
                   )}
 
-                  {/* PREVIEW */}
-                  {signedPreview && (
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium">Preview</p>
-
-                      <iframe
-                        key={signedPreview}
-                        src={signedPreview}
-                        className="w-full h-[420px] border rounded-lg bg-gray-50"
-                        title="resume-preview"
-                      />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="edit-section-title">Preview</p>
 
                       {resumeMode === "upload" && uploadComplete && (
                         <button
+                          type="button"
                           onClick={() => {
                             setUploadComplete(false);
                             setField("resumeFile", null);
                             setField("resumeTitle", "");
-                            setField("resumeId", ""); // ✅ ADD HERE ALSO
+                            setField("resumeId", "");
                             setPreviewUrl("");
-                            setSignedPreview(""); // ✅ also clear this
+                            setSignedPreview("");
+
+                            if (fileInputRef.current) {
+                              fileInputRef.current.value = "";
+                            }
                           }}
-                          className="text-sm text-indigo-600 underline"
+                          className="text-xs font-semibold text-brand-hover underline"
                         >
                           Upload another resume
                         </button>
                       )}
                     </div>
-                  )}
 
+                    {signedPreview ? (
+                      <iframe
+                        key={signedPreview}
+                        src={signedPreview}
+                        className="edit-preview-frame"
+                        title="resume-preview"
+                      />
+                    ) : (
+                      <div className="edit-empty-box">
+                        {previewUrl
+                          ? "Preview is loading or not available for this file."
+                          : "No resume preview selected yet."}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
+
               {step === 4 && (
                 <div className="space-y-4">
+                  <div className="edit-info-box">
+                    <div className="edit-info-title">Session Duration</div>
+                    <div className="edit-info-desc">
+                      Adjust the session duration and auto-extension setting for this interview.
+                    </div>
+                  </div>
 
-                  <label className="flex justify-between items-center">
-                    <span className="text-sm font-medium">
-                      Auto Extend Session
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={form.autoExtend}
-                      onChange={() =>
-                        setField("autoExtend", !form.autoExtend)
-                      }
-                    />
-                  </label>
+                  <div className="edit-toggle-row">
+                    <div>
+                      <div className="edit-toggle-title">Auto Extend Session</div>
+                      <p className="edit-toggle-sub">
+                        Keep the interview session active when more time is needed.
+                      </p>
+                    </div>
 
-                  <div>
-                    <label className="text-sm block mb-1">
-                      Duration (minutes)
+                    <label className="edit-switch">
+                      <input
+                        type="checkbox"
+                        checked={form.autoExtend}
+                        onChange={() => setField("autoExtend", !form.autoExtend)}
+                      />
+                      <span />
                     </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {[30, 60].map((duration) => (
+                      <label
+                        key={duration}
+                        className={`edit-duration-card ${
+                          Number(form.durationMinutes) === duration ? "active" : ""
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="durationMinutes"
+                          value={duration}
+                          checked={Number(form.durationMinutes) === duration}
+                          onChange={() => setField("durationMinutes", duration)}
+                          className="hidden"
+                        />
+
+                        <Timer />
+                        <span>
+                          <span className="edit-duration-value">{duration}</span>
+                          <span className="edit-duration-sub">
+                            minutes {duration === 30 ? "• ½ credit" : "• 1 credit"}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="edit-form-label">
+                      <Clock3 />
+                      Custom Duration
+                    </label>
+
                     <input
                       type="number"
+                      min="1"
                       value={form.durationMinutes}
-                      onChange={(e) =>
-                        setField("durationMinutes", e.target.value)
-                      }
-                      className="w-full p-3 border rounded-lg"
+                      onChange={(event) => setField("durationMinutes", event.target.value)}
+                      className="edit-form-input"
                     />
                   </div>
                 </div>
@@ -730,58 +1185,59 @@ export default function SessionEditModal({
           )}
         </div>
 
-        <div className="p-4 border-t flex justify-between bg-white">
-
+        <div className="edit-footer">
           {step > 1 ? (
-            <button
-              onClick={prev}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
-            >
-              <ArrowLeft size={16} /> Prev
+            <button type="button" onClick={prev} className="btn-outline">
+              <ArrowLeft className="h-4 w-4" />
+              Prev
             </button>
           ) : (
             <div />
           )}
 
-          {step < 4 ? (
-            <button
-              onClick={next}
-              disabled={step === 3 && resumeMode === "upload" && !uploadComplete}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-white
-        ${step === 3 && resumeMode === "upload" && !uploadComplete
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "theme-primary"
-                }`}
-            >
-              Next <ArrowRight size={16} />
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" onClick={handleClose} className="btn-outline">
+              Cancel
             </button>
-          ) : (
-            <button
-              onClick={save}
-              disabled={saving}
-              className="px-6 py-2 rounded-lg text-white theme-primary"
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
-          )}
 
+            {step < 4 ? (
+              <button
+                type="button"
+                onClick={next}
+                disabled={isNextDisabled}
+                className="btn-teal disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+                <ArrowRight />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                className="btn-teal disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            )}
+          </div>
         </div>
-
       </div>
+
       <ResumeProcessingLoader
         open={isUploading}
         processing={isUploading}
         successMessage="Resume Uploaded Successfully!"
       />
-      {/* Toast Container */}
-      <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
-        {toasts.map((t) => (
+
+      <div className="fixed right-6 top-6 z-[999999] flex flex-col gap-3">
+        {toasts.map((toast) => (
           <Toast
-            key={t.id}
-            id={t.id}
-            type={t.type}
-            message={t.message}
-            onClose={(id) => setToasts((prev) => prev.filter((x) => x.id !== id))}
+            key={toast.id}
+            id={toast.id}
+            type={toast.type}
+            message={toast.message}
+            onClose={(id) => setToasts((prev) => prev.filter((item) => item.id !== id))}
           />
         ))}
       </div>
