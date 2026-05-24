@@ -1019,68 +1019,135 @@
   }
 
   .pagination {
-    @apply flex flex-wrap items-center gap-1.5;
+  @apply flex flex-wrap items-center gap-1.5;
+}
+
+.page-btn {
+  @apply grid min-h-8 min-w-8 cursor-pointer place-items-center rounded-lg border-2 bg-transparent px-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40;
+  border-color: var(--session-border);
+  color: var(--session-text-mid);
+  font-family: var(--font-body);
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.page-btn.active {
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+  color: var(--white);
+  font-weight: 700;
+}
+
+/* Fix active pagination hover text visibility */
+.page-btn.active:hover:not(:disabled) {
+  background-color: var(--color-brand-hover);
+  border-color: var(--color-brand-hover);
+  color: var(--white);
+}
+
+ /* ─────────────────────────────────────────
+   CONFIRM DELETE MODAL
+───────────────────────────────────────── */
+.confirm-modal-overlay {
+  @apply fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm;
+  font-family: var(--font-body);
+}
+
+.confirm-modal-box {
+  @apply relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl;
+  animation: confirmModalIn 0.25s ease both;
+}
+
+.confirm-close-btn {
+  @apply absolute right-4 top-4 z-10 grid h-7 w-7 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-1 transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  color: var(--session-text-light, #94a3b8);
+}
+
+.confirm-close-btn:hover:not(:disabled) {
+  color: var(--session-text-dark, #0f172a);
+}
+
+.confirm-close-btn svg {
+  @apply h-4 w-4;
+}
+
+.confirm-modal-body {
+  @apply px-7 pb-7 pt-6 text-center;
+}
+
+.confirm-icon-wrap {
+  @apply mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full border-2;
+  background-color: var(--session-danger-bg, #fff3f3);
+  border-color: var(--session-danger-border, #fac7c7);
+}
+
+.confirm-icon-wrap svg {
+  @apply h-7 w-7;
+  color: var(--session-danger, #e05252);
+}
+
+.confirm-modal-title {
+  @apply mb-2 text-lg font-bold;
+  color: var(--session-text-dark, #0f172a);
+  font-family: var(--font-body);
+}
+
+.confirm-message {
+  @apply mx-auto mb-6 max-w-sm text-sm leading-6;
+  color: var(--session-text-mid, #64748b);
+}
+
+.confirm-actions {
+  @apply flex flex-col items-center justify-center gap-3 sm:flex-row;
+}
+
+.btn-cancel-soft {
+  @apply inline-flex min-h-10 w-full cursor-pointer items-center justify-center rounded-lg border-2 bg-transparent px-6 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto;
+  border-color: var(--session-border, #e2e8f0);
+  color: var(--session-text-dark, #0f172a);
+  font-family: var(--font-body);
+}
+
+.btn-cancel-soft:hover:not(:disabled) {
+  border-color: var(--color-brand, #00c896);
+  color: var(--color-brand, #00c896);
+}
+
+.btn-confirm-danger {
+  @apply inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-0 px-6 py-2.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto;
+  background-color: var(--session-danger, #e05252);
+  font-family: var(--font-body);
+}
+
+.btn-confirm-danger:hover:not(:disabled) {
+  background-color: var(--session-danger-hover, #c94444);
+}
+
+.confirm-btn-spinner {
+  @apply h-4 w-4 rounded-full border-2 border-white/40 border-t-white;
+  animation: confirmSpinner 0.8s linear infinite;
+}
+
+@keyframes confirmModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(0.5rem);
   }
 
-  .page-btn {
-    @apply grid min-h-8 min-w-8 cursor-pointer place-items-center rounded-lg border-2 bg-transparent px-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40;
-    border-color: var(--session-border);
-    color: var(--session-text-mid);
-    font-family: var(--font-body);
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
+}
 
-  .page-btn:hover:not(:disabled) {
-    border-color: var(--color-brand);
-    color: var(--color-brand);
+@keyframes confirmSpinner {
+  to {
+    transform: rotate(360deg);
   }
-
-  .page-btn.active {
-    background-color: var(--color-brand);
-    border-color: var(--color-brand);
-    color: var(--white);
-    font-weight: 700;
-  }
-
-  .confirm-modal-overlay {
-    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
-  }
-
-  .confirm-modal-backdrop {
-    @apply absolute inset-0 bg-black/40 backdrop-blur-sm;
-  }
-
-  .confirm-modal-box {
-    @apply relative z-10 w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl;
-  }
-
-  .confirm-modal-header {
-    @apply mb-4 flex items-center justify-between;
-  }
-
-  .confirm-modal-title {
-    @apply text-lg font-semibold;
-    color: var(--session-text-dark);
-    font-family: var(--font-body);
-  }
-
-  .confirm-close-btn {
-    @apply cursor-pointer border-0 bg-transparent text-sm transition-colors;
-    color: var(--session-text-mid);
-  }
-
-  .confirm-close-btn:hover {
-    color: var(--session-text-dark);
-  }
-
-  .confirm-message {
-    @apply mb-4 text-sm;
-    color: var(--session-text-mid);
-  }
-
-  .confirm-actions {
-    @apply flex justify-end gap-2;
-  }
-
+}
   .btn-cancel-soft {
     @apply cursor-pointer rounded-lg border-2 bg-transparent px-5 py-2 text-sm font-semibold transition-colors;
     border-color: var(--session-border);
