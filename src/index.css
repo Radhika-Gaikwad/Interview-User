@@ -79,6 +79,17 @@
   --session-danger-hover: #c94444;
   --session-danger-bg: #fef0f0;
   --session-danger-border: #fac7c7;
+
+    --teal: #0fb380;
+  --teal-dark: #0a8f68;
+  --teal-light: #e7f8f3;
+  --teal-mid: #bcebdd;
+
+  --text-dark: #1b2f3a;
+  --text-mid: #647887;
+  --text-light: #8ca0ac;
+
+  --border: #e4edf0;
 }
 
 /* ─────────────────────────────────────────
