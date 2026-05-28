@@ -496,7 +496,6 @@ export default function CreateSession({ open, onClose, onCreated }) {
       }
 
       setIsUploading(true);
-      showToast("Uploading resume...", "info");
 
       const res = await uploadToGCS(form.resumeFile, form.resumeTitle);
       const uploaded = res?.resume || res?.data?.resume || res?.data || res;

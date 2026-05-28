@@ -350,7 +350,6 @@ export default function SessionEditModal({ open, item, onClose, onSave }) {
       }
 
       setIsUploading(true);
-      showToast("Uploading resume...", "info");
 
       const res = await uploadToGCS(form.resumeFile, form.resumeTitle);
       const uploaded = res?.resume || res?.data?.resume || res?.data || res;
